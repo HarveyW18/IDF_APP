@@ -1,0 +1,1 @@
+// ViewModel pour l'authentification

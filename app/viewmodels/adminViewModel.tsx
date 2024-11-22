@@ -1,0 +1,1 @@
+// ViewModel pour les administrateurs
