@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Auth from '../views/auth/auth'; // Import unique de la page auth
+import Auth from '../views/auth/authuser'; // Import unique de la page auth
 
 const Stack = createNativeStackNavigator();
 

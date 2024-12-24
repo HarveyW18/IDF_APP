@@ -54,12 +54,19 @@ function RootLayoutNav() {
         {/* Route pour afficher une page modale */}
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
 
-        {/* Route pour la page de connexion */}
+        {/* Route pour la page de connexion utilisateur */}
         <Stack.Screen
-          name="views/auth/auth"
+          name="authuser"
           options={{
-            headerTitle: 'Se connecter', // Titre affiché dans le header
-            headerShown: true, // Afficher le header pour cette page
+            headerShown: false,
+          }}
+        />
+
+        {/* Route pour la page de connexion agent */}
+        <Stack.Screen
+          name="authagent"
+          options={{
+            headerShown: false,
           }}
         />
       </Stack>

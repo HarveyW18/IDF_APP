@@ -16,6 +16,9 @@ export const useAuthViewModel = () => {
     phone: '',
   });
 
+  // État pour le rôle de l'utilisateur
+  const [role, setRole] = useState<string | null>(null);
+
   // État pour gérer le chargement et les erreurs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +26,7 @@ export const useAuthViewModel = () => {
   // Gestionnaire pour basculer entre "Connexion" et "Inscription"
   const toggleConnexion = (isSelected: boolean) => {
     setIsConnexionSelected(isSelected);
-    setIsNextStep(false); // Réinitialise l'étape si on bascule vers "Connexion"
+    setIsNextStep(false); // Réinitialise l’étape si on bascule vers "Connexion"
   };
 
   // Gestionnaire pour passer à l'étape suivante
@@ -45,6 +48,13 @@ export const useAuthViewModel = () => {
     setError(null);
     try {
       const data = await login(inputs.email, inputs.password); // Appel API
+      if (data.role === 'agent') {
+        setRole('agent');
+      } else if (data.role === 'admin') {
+        setRole('admin');
+      } else {
+        setRole('user');
+      }
       setLoading(false);
       return data; // Succès : retourne les données de connexion
     } catch (err: any) {
@@ -80,5 +90,6 @@ export const useAuthViewModel = () => {
     handleRegister,
     loading,
     error,
+    role, // Retourne également le rôle
   };
 };
