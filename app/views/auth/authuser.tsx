@@ -123,6 +123,71 @@ const Auth = observer(() => {
             {/* Inscription */}
             {!isNextStep ? (
               <>
+              <View style={styles.inputContainer}>
+                  <FontAwesome
+                    name="user"
+                    size={width * 0.05}
+                    color="#8696BB"
+                    style={styles.icon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="nom"
+                    value={inputs.lastName}
+                    onChangeText={(text) => updateInput("lastName", text)}
+                  />
+                </View>
+                <View style={styles.inputContainer}>
+                  <FontAwesome
+                    name="user"
+                    size={width * 0.05}
+                    color="#8696BB"
+                    style={styles.icon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="prénom"
+                    value={inputs.firstName}
+                    onChangeText={(text) => updateInput("firstName", text)}
+                  />
+                </View>
+                <View style={styles.inputContainer}>
+                  <FontAwesome
+                    name="map-marker"
+                    size={width * 0.05}
+                    color="#8696BB"
+                    style={styles.icon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="adresse"
+                    value={inputs.address}
+                    onChangeText={(text) => updateInput("address", text)}
+                  />
+                </View>
+                <View style={styles.inputContainer}>
+                  <FontAwesome
+                    name="phone"
+                    size={width * 0.05}
+                    color="#8696BB"
+                    style={styles.icon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="numéro de téléphone"
+                    value={inputs.phone}
+                    onChangeText={(text) => updateInput("phone", text)}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={toggleNextStep}
+                >
+                  <Text style={styles.buttonText}>Suivant</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
                 <View style={styles.inputContainer}>
                   <FontAwesome
                     name="envelope"
@@ -152,41 +217,19 @@ const Auth = observer(() => {
                     onChangeText={(text) => updateInput("password", text)}
                   />
                 </View>
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={toggleNextStep}
-                >
-                  <Text style={styles.buttonText}>Suivant</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
                 <View style={styles.inputContainer}>
                   <FontAwesome
-                    name="map-marker"
+                    name="lock"
                     size={width * 0.05}
                     color="#8696BB"
                     style={styles.icon}
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="adresse"
-                    value={inputs.address}
-                    onChangeText={(text) => updateInput("address", text)}
-                  />
-                </View>
-                <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="phone"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="numéro de téléphone"
-                    value={inputs.phone}
-                    onChangeText={(text) => updateInput("phone", text)}
+                    placeholder="confirmer mot de passe"
+                    secureTextEntry
+                    value={inputs.password}
+                    onChangeText={(text) => updateInput("confirmpassword", text)}
                   />
                 </View>
                 <TouchableOpacity
@@ -275,7 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: width * 0.03,
     margin: height * 0.015,
     padding: width * 0.025,
-    width: "90%",
+    width: "70%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: height * 0.002 },
     shadowOpacity: 0.1,
@@ -298,17 +341,20 @@ const styles = StyleSheet.create({
     padding: height * 0.02,
     alignItems: "center",
     justifyContent: "center",
-    width: "90%",
-    height: height * 0.05,
+    width: "65%",
+    height: height * 0.055,
     shadowColor: "#4894FE",
     shadowOffset: { width: 0, height: height * 0.005 },
     shadowOpacity: 0.3,
     shadowRadius: width * 0.05,
+    alignSelf: "center",
   },
   buttonText: {
     color: "white",
     fontSize: width * 0.03,
-    fontWeight: "600",
+    fontWeight: "500",
+    marginHorizontal: width * 0.05,
+    marginBottom: height * 0.0005,
   },
   footerText: {
     color: "#8696BB",

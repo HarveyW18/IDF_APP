@@ -12,8 +12,11 @@ export const useAuthViewModel = () => {
   const [inputs, setInputs] = useState({
     email: '',
     password: '',
+    confirmpassword: '',
     address: '',
     phone: '',
+    lastName: "", 
+    firstName: "",
   });
 
   // État pour le rôle de l'utilisateur
