@@ -1,0 +1,1 @@
+// Modèle pour les requêtes
