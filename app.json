@@ -15,6 +15,9 @@
     "ios": {
       "supportsTablet": true
     },
+    "reactNativeExperimentalFeatures": {
+      "newArchEnabled": true
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -27,7 +30,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
