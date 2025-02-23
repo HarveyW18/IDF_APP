@@ -28,6 +28,10 @@ const Auth = observer(() => {
     updateInput,
     loading,
     error,
+    errors,
+    isNextStepDisabled,
+    isLoginDisabled,  
+  isRegisterDisabled
   } = useAuthViewModel();
 
   return (
@@ -85,10 +89,12 @@ const Auth = observer(() => {
               <TextInput
                 style={styles.input}
                 placeholder="email"
+                placeholderTextColor={"#444"}
                 value={inputs.email}
                 onChangeText={(text) => updateInput("email", text)}
               />
             </View>
+            {errors.lastName && <Text style={styles.error}>{errors.lastName}</Text>}
             <View style={styles.inputContainer}>
               <FontAwesome
                 name="lock"
@@ -99,20 +105,21 @@ const Auth = observer(() => {
               <TextInput
                 style={styles.input}
                 placeholder="mot de passe"
+                placeholderTextColor={"#444"}
                 secureTextEntry
                 value={inputs.password}
                 onChangeText={(text) => updateInput("password", text)}
               />
             </View>
+            {errors.lastName && <Text style={styles.error}>{errors.lastName}</Text>}
             <TouchableOpacity
-              style={styles.button}
+              style={[styles.button, isLoginDisabled && styles.disabledButton]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={isLoginDisabled}
             >
-              <Text style={styles.buttonText}>
-                {loading ? "Connexion..." : "Se connecter"}
-              </Text>
+              <Text style={styles.buttonText}>{loading ? "Connexion..." : "Se connecter"}</Text>
             </TouchableOpacity>
+
             <Text style={styles.footerText}>
               <Text style={styles.linkText}>Mot de passe oublié ?</Text>
             </Text>
@@ -123,124 +130,114 @@ const Auth = observer(() => {
             {/* Inscription */}
             {!isNextStep ? (
               <>
-              <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="user"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
+                <View style={styles.inputContainer}>
+                  <FontAwesome name="user" size={width * 0.05} color="#8696BB" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="nom"
+                    placeholder="Nom"
+                    placeholderTextColor={"#444"}
                     value={inputs.lastName}
                     onChangeText={(text) => updateInput("lastName", text)}
                   />
                 </View>
+                {errors?.lastName && <Text style={styles.error}>{errors.lastName}</Text>}
+
                 <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="user"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
+                  <FontAwesome name="user" size={width * 0.05} color="#8696BB" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="prénom"
+                    placeholder="Prénom"
+                    placeholderTextColor={"#444"}
                     value={inputs.firstName}
                     onChangeText={(text) => updateInput("firstName", text)}
                   />
                 </View>
+                {errors?.firstName && <Text style={styles.error}>{errors.firstName}</Text>}
+
                 <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="map-marker"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
+                  <FontAwesome name="map-marker" size={width * 0.05} color="#8696BB" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="adresse"
+                    placeholder="Adresse"
+                    placeholderTextColor={"#444"}
                     value={inputs.address}
                     onChangeText={(text) => updateInput("address", text)}
                   />
                 </View>
+                {errors?.address && <Text style={styles.error}>{errors.address}</Text>}
+
                 <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="phone"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
+                  <FontAwesome name="phone" size={width * 0.05} color="#8696BB" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="numéro de téléphone"
+                    placeholder="Numéro de téléphone"
+                    placeholderTextColor={"#444"}
+                    keyboardType="numeric"
                     value={inputs.phone}
                     onChangeText={(text) => updateInput("phone", text)}
                   />
                 </View>
+                {errors?.phone && <Text style={styles.error}>{errors.phone}</Text>}
+
                 <TouchableOpacity
-                  style={styles.button}
+                  style={[styles.button, isNextStepDisabled && styles.disabledButton]}
                   onPress={toggleNextStep}
+                  disabled={isNextStepDisabled}
                 >
                   <Text style={styles.buttonText}>Suivant</Text>
                 </TouchableOpacity>
+
               </>
             ) : (
               <>
                 <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="envelope"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
+                  <FontAwesome name="envelope" size={width * 0.05} color="#8696BB" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="email"
+                    placeholder="Email"
+                    placeholderTextColor={"#444"}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                     value={inputs.email}
                     onChangeText={(text) => updateInput("email", text)}
                   />
                 </View>
+                {errors?.email && <Text style={styles.error}>{errors.email}</Text>}
+
                 <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="lock"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
+                  <FontAwesome name="lock" size={width * 0.05} color="#8696BB" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="mot de passe"
+                    placeholder="Mot de passe"
+                    placeholderTextColor={"#444"}
                     secureTextEntry
                     value={inputs.password}
                     onChangeText={(text) => updateInput("password", text)}
                   />
                 </View>
+                {errors?.password && <Text style={styles.error}>{errors.password}</Text>}
+
                 <View style={styles.inputContainer}>
-                  <FontAwesome
-                    name="lock"
-                    size={width * 0.05}
-                    color="#8696BB"
-                    style={styles.icon}
-                  />
+                  <FontAwesome name="lock" size={width * 0.05} color="#8696BB" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="confirmer mot de passe"
+                    placeholder="Confirmer le mot de passe"
+                    placeholderTextColor={"#444"}
                     secureTextEntry
-                    value={inputs.password}
+                    value={inputs.confirmpassword}
                     onChangeText={(text) => updateInput("confirmpassword", text)}
                   />
                 </View>
+                {errors?.confirmpassword && <Text style={styles.error}>{errors.confirmpassword}</Text>}
+
                 <TouchableOpacity
-                  style={styles.button}
+                  style={[styles.button, isRegisterDisabled && styles.disabledButton]}
                   onPress={handleRegister}
-                  disabled={loading}
+                  disabled={isRegisterDisabled}
                 >
-                  <Text style={styles.buttonText}>
-                    {loading ? "Inscription..." : "Valider"}
-                  </Text>
+                  <Text style={styles.buttonText}>{loading ? "Inscription..." : "Valider"}</Text>
                 </TouchableOpacity>
+
                 {error && <Text style={styles.error}>{error}</Text>}
               </>
             )}
@@ -348,6 +345,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: width * 0.05,
     alignSelf: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#B0B0B0", // Couleur grisée pour indiquer le désactivé
+    shadowColor: "transparent", // Supprime l'ombre pour un effet désactivé
   },
   buttonText: {
     color: "white",
