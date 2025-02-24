@@ -16,13 +16,17 @@ const useTrajetViewModel = () => {
         setError(null);
 
         try {
+            console.log("🔍 Recherche d'itinéraire pour :", depart, "➡️", arrivee);
             const data = await obtenirItineraires(depart, arrivee);
-            if (data && data.routes) {
-                setTrajets(data.routes[0].sections || []);
+
+            if (data && data.length > 0) {
+                console.log("✅ Itinéraires trouvés :", data.length);
+                setTrajets(data[0].sections || []);
             } else {
-                setError("Aucun itinéraire trouvé.");
+                setError("❌ Aucun itinéraire trouvé.");
             }
         } catch (err) {
+            console.error("❌ Erreur lors de la récupération des itinéraires :", err);
             setError("Erreur lors de la récupération des itinéraires.");
         }
 

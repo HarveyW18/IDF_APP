@@ -1,83 +1,118 @@
-import React from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Animated } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../navigation/RootStackParamList";
-import { useAuthViewModel } from "../../viewmodels/authViewModel"; 
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import React, { useEffect, useRef } from "react";
+import { View, Text, Image, StyleSheet, Animated, TouchableOpacity } from "react-native";
+import { useAuthViewModel } from "../../viewmodels/authViewModel";
+import { WebView } from "react-native-webview";
+import { getHereMapHTML } from "../../viewmodels/HereMapViewModel";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import Navbar from "../../../components/Navbar";
 
 const HomeScreen = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, "SearchScreen">>();
-    const { user } = useAuthViewModel(); // Récupérer l'utilisateur connecté
+    const { user } = useAuthViewModel();
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const slideAnim = useRef(new Animated.Value(0)).current;
+    const router = useRouter();
 
-    // Animation pour la transition
-    const fadeAnim = new Animated.Value(1);
-
+    // Fonction pour gérer l'animation avant la navigation
     const handlePress = () => {
-        Animated.timing(fadeAnim, {
-            toValue: 0, // Réduire l'opacité avant navigation
-            duration: 200, // Durée de l'animation
-            useNativeDriver: true,
-        }).start(() => {
-            navigation.navigate("SearchScreen"); // Naviguer après l'animation
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 0, // Diminue l'opacité progressivement
+                duration: 400, 
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: -300, // Fait glisser vers la gauche
+                duration: 400,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            router.push("/views/client/SearchScreen"); // Navigation après l'animation
+
+            // Réinitialisation des animations après la navigation
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 1, // Réaffichage en douceur
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(slideAnim, {
+                    toValue: 0, // Retour à la position initiale
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]).start();
         });
     };
 
     return (
-        <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-            {/* 🗺️ Carte en arrière-plan */}
-            <MapView
-                provider={PROVIDER_GOOGLE}
-                style={styles.map}
-                initialRegion={{
-                    latitude: 48.8566, // Exemple : Paris
-                    longitude: 2.3522,
-                    latitudeDelta: 0.05,
-                    longitudeDelta: 0.05,
-                }}
-            />
+        <View style={styles.container}>
+            {/* 🌍 Carte HERE Maps */}
+            <Animated.View style={[styles.mapContainer, { opacity: fadeAnim }]}>
+                <WebView source={{ html: getHereMapHTML() }} style={styles.map} />
+            </Animated.View>
 
-            {/* 🔹 Carte de bienvenue */}
-            <View style={styles.card}>
-                <View style={styles.header}>
-                    <Text style={styles.greeting}>Bonjour,</Text>
-                    <Text style={styles.name}>Hi {user ? user.email : "Utilisateur"}</Text>
-                    <Image source={require("../../../assets/avatar/avatar.png")} style={styles.avatar} />
+            {/* 📌 Carte utilisateur */}
+            <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
+                <View style={styles.content}>
+                    <View style={styles.header}>
+                        <Text style={styles.greeting}>Bonjour,</Text>
+                        <Text style={styles.name}>{user ? user.email : "Utilisateur"}</Text>
+                        <Image source={require("../../../assets/avatar/avatar.png")} style={styles.avatar} />
+                    </View>
+
+                    {/* 🔍 Barre de recherche animée avec effet de slide */}
+                    <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+                        <TouchableOpacity 
+                            style={styles.searchBar} 
+                            activeOpacity={0.8} 
+                            onPress={handlePress}
+                        >
+                            <Ionicons name="search" size={20} color="#A0A0A0" />
+                            <Text style={styles.searchText}>Rechercher un itinéraire</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
                 </View>
 
-                {/* 🔍 Barre de recherche */}
-                <TouchableOpacity onPress={handlePress} style={styles.searchBar}>
-                    <TextInput
-                        placeholder="Rechercher un itinéraire"
-                        style={styles.input}
-                        editable={false} // Désactivé pour utiliser le TouchableOpacity
-                    />
-                </TouchableOpacity>
-            </View>
-        </Animated.View>
+                {/* 🚀 Barre de navigation incluse dans la card */}
+                <Navbar />
+            </Animated.View>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: "#F5F7FB",
+    },
+    mapContainer: {
+        width: "100%",
+        height: "50%",
     },
     map: {
-        ...StyleSheet.absoluteFillObject, // Prend tout l'écran
+        width: "100%",
+        height: "100%",
     },
     card: {
         position: "absolute",
-        bottom: 20,
-        left: 20,
-        right: 20,
+        width: "97%",
+        height: "40%",
+        bottom: 0,
+        alignSelf: "center",
         backgroundColor: "white",
-        borderRadius: 15,
-        padding: 20,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingTop: 20,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: -5 },
         shadowOpacity: 0.2,
-        shadowRadius: 5,
-        elevation: 5,
+        shadowRadius: 10,
+        elevation: 6,
+        justifyContent: "space-between",
+    },
+    content: {
+        paddingHorizontal: 20,
     },
     header: {
         flexDirection: "row",
@@ -93,23 +128,24 @@ const styles = StyleSheet.create({
         marginLeft: 5,
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         marginLeft: "auto",
     },
     searchBar: {
-        marginTop: 15,
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#f5f5f5",
+        backgroundColor: "#EEF1F6",
         borderRadius: 10,
-        padding: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        marginTop: 20,
     },
-    input: {
-        flex: 1,
+    searchText: {
         fontSize: 16,
-        color: "#555",
+        color: "#A0A0A0",
+        marginLeft: 10,
     },
 });
 

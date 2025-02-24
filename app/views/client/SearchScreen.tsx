@@ -1,18 +1,16 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import SearchBar from "../../../components/SearchBar";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../navigation/RootStackParamList";
+import { useRouter } from "expo-router"; // ✅ Import expo-router
 
 const SearchScreen = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, "SearchScreen">>();
+    const router = useRouter(); // ✅ Utiliser router de expo-router
     
     const [depart, setDepart] = useState("");
     const [arrivee, setArrivee] = useState("");
 
     return (
-        <View style={{ flex: 1, padding: 16, backgroundColor: "white" }}> {/* Ajout du fond blanc */}
+        <View style={{ flex: 1, padding: 16, backgroundColor: "white" }}> 
             <Text style={{ fontSize: 18, fontWeight: "bold" }}>Départ</Text>
             <SearchBar placeholder="Entrez un lieu de départ" onSelect={setDepart} />
 
@@ -27,7 +25,10 @@ const SearchScreen = () => {
                     borderRadius: 8,
                     alignItems: "center",
                 }}
-                onPress={() => navigation.navigate("ResultsScreen", { depart, arrivee })}
+                onPress={() => router.push({ 
+                    pathname: "/views/client/ResultsScreen", 
+                    params: { depart, arrivee } 
+                })}
             >
                 <Text style={{ color: "white", fontSize: 18 }}>🔍 Rechercher Trajet</Text>
             </TouchableOpacity>

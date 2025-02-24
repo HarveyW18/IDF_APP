@@ -81,7 +81,14 @@ function RootLayoutNav() {
 
         {/* 🔹 Ajouter la page de recherche de trajets */}
         <Stack.Screen
-          name="SearchScreen"
+          name="views/client/SearchScreen"
+          options={{
+            headerShown: false
+          }}
+        />
+
+        <Stack.Screen
+          name="views/client/ResultsScreen"
           options={{
             headerShown: false
           }}

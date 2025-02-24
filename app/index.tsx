@@ -31,6 +31,13 @@ export default function Home() {
         </>
       ) : (
         <>
+        <Pressable
+            onPress={() => router.push("/views/client/Home")}
+            style={{ backgroundColor: "#28a745", padding: 10, borderRadius: 5, marginBottom: 10 }}
+          >
+            <Text style={{ color: "white", fontSize: 16 }}>🏠 Page d'Accueil</Text>
+          </Pressable>
+
           <Pressable
             onPress={() => router.push("/views/client/SearchScreen")}
             style={{ backgroundColor: "#28a745", padding: 10, borderRadius: 5, marginBottom: 10 }}

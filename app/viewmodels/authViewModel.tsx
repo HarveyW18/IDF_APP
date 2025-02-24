@@ -123,7 +123,7 @@ export const useAuthViewModel = () => {
       }
   
       setLoading(false);
-      router.replace("/");
+      router.replace("/views/client/Home");
       return user;
     } catch (err: any) {
       setError(err.message || "Erreur de connexion.");
@@ -171,7 +171,7 @@ export const useAuthViewModel = () => {
   
       setRole("user");
       setLoading(false);
-      router.replace("/");
+      router.replace("/views/client/Home");
       return user;
     } catch (err: any) {
       const errorMessage = translateFirebaseError(err.code);

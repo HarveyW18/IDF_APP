@@ -1,18 +1,16 @@
 import React, { useEffect } from "react";
 import { View, Text, ActivityIndicator, FlatList } from "react-native";
-import { useRoute } from "@react-navigation/native";
+import { useLocalSearchParams } from "expo-router";
 import useTrajetViewModel from "../../viewmodels/trajetViewModel";
 import TrajetCard from "../../../components/TrajetCard";
 
-
 const ResultsScreen = () => {
-    const route = useRoute();
-    const { depart, arrivee } = route.params as { depart: string; arrivee: string };
+    const { depart, arrivee } = useLocalSearchParams<{ depart: string; arrivee: string }>();
     const { trajets, loading, error, chargerItineraires } = useTrajetViewModel();
 
     useEffect(() => {
         chargerItineraires(depart, arrivee);
-    }, [depart, arrivee]); // ✅ Ajout de dépendances    
+    }, [depart, arrivee]);
 
     return (
         <View style={{ flex: 1, padding: 16 }}>

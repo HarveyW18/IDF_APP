@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 export type RootStackParamList = {
     SearchScreen: undefined;
     ResultsScreen: { depart: string; arrivee: string };
+    AuthScreen: undefined;
 };
 
 // 🔹 Type pour `ResultsScreen`
