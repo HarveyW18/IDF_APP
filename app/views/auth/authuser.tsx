@@ -46,249 +46,253 @@ const Auth = observer(() => {
   const passwordRef = useRef<TextInput>(null);
   const confirmPasswordRef = useRef<TextInput>(null);
 
-    return (
-      <>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1, backgroundColor: "white" }}
+  return (
+    <>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1, backgroundColor: "white" }}
+      >
+        <KeyboardAwareScrollView
+          extraScrollHeight={10}
+          enableOnAndroid={true}
+          contentContainerStyle={{ flexGrow: 1, backgroundColor: "white" }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <KeyboardAwareScrollView
-            extraScrollHeight={10}
-            enableOnAndroid={true}
-            contentContainerStyle={{ flexGrow: 1, backgroundColor: "white" }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Image de fond avec une superposition */}
-            <View style={styles.imageContainer}>
-              <Image
-                source={require("../../../assets/images/image1.png")}
-                style={styles.image}
-              />
-              <View style={styles.imageOverlay} />
+          {/* Image de fond avec une superposition */}
+          <View style={styles.imageContainer}>
+            <Image
+              source={require("../../../assets/images/image1.png")}
+              style={styles.image}
+            />
+            <View style={styles.imageOverlay} />
+          </View>
+
+          <View style={styles.formContainer}>
+            {/* Switch entre Connexion et Inscription */}
+            <View style={styles.switchContainer}>
+              <TouchableOpacity onPress={() => toggleConnexion(true)}>
+                <Text
+                  style={[
+                    styles.switchText,
+                    isConnexionSelected && styles.activeSwitchText,
+                  ]}
+                >
+                  Connexion
+                </Text>
+                {/* Ligne active sous le bouton sélectionné */}
+                {isConnexionSelected && <View style={styles.activeLine} />}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => toggleConnexion(false)}>
+                <Text
+                  style={[
+                    styles.switchText,
+                    !isConnexionSelected && styles.activeSwitchText,
+                  ]}
+                >
+                  Inscription
+                </Text>
+                {/* Ligne active sous le bouton sélectionné */}
+                {!isConnexionSelected && <View style={styles.activeLine} />}
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.formContainer}>
-              {/* Switch entre Connexion et Inscription */}
-              <View style={styles.switchContainer}>
-                <TouchableOpacity onPress={() => toggleConnexion(true)}>
-                  <Text
-                    style={[
-                      styles.switchText,
-                      isConnexionSelected && styles.activeSwitchText,
-                    ]}
-                  >
-                    Connexion
-                  </Text>
-                  {/* Ligne active sous le bouton sélectionné */}
-                  {isConnexionSelected && <View style={styles.activeLine} />}
+            {/* Formulaires */}
+            {isConnexionSelected ? (
+              <SafeAreaView style={styles.formArea}>
+                {/* Connexion */}
+                <View style={styles.inputContainer}>
+                  <FontAwesome
+                    name="envelope"
+                    size={width * 0.05}
+                    color="#8696BB"
+                    style={styles.icon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="email"
+                    placeholderTextColor={"#444"}
+                    value={inputs.email}
+                    keyboardType="email-address"
+                    onChangeText={(text) => updateInput("email", text)}
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                  />
+                </View>
+                {errors.email && <Text style={styles.error}>{errors.email}</Text>}
+                <View style={styles.inputContainer}>
+                  <FontAwesome
+                    name="lock"
+                    size={width * 0.05}
+                    color="#8696BB"
+                    style={styles.icon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="mot de passe"
+                    ref={passwordRef}
+                    placeholderTextColor={"#444"}
+                    secureTextEntry
+                    value={inputs.password}
+                    onChangeText={(text) => updateInput("password", text)}
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={[styles.button, isLoginDisabled && styles.disabledButton]}
+                  onPress={handleLogin}
+                  disabled={isLoginDisabled}
+                >
+                  <Text style={styles.buttonText}>{loading ? "Connexion..." : "Se connecter"}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => toggleConnexion(false)}>
-                  <Text
-                    style={[
-                      styles.switchText,
-                      !isConnexionSelected && styles.activeSwitchText,
-                    ]}
-                  >
-                    Inscription
-                  </Text>
-                  {/* Ligne active sous le bouton sélectionné */}
-                  {!isConnexionSelected && <View style={styles.activeLine} />}
-                </TouchableOpacity>
-              </View>
+                <Text style={styles.footerText}>
+                  <Text style={styles.linkText}>Mot de passe oublié ?</Text>
+                </Text>
+                {error && <Text style={styles.error}>{error}</Text>}
+              </SafeAreaView>
+            ) : (
+              <SafeAreaView style={styles.formArea}>
+                {/* Inscription */}
+                {!isNextStep ? (
+                  <>
+                    <View style={styles.inputContainer}>
+                      <FontAwesome name="user" size={width * 0.05} color="#8696BB" style={styles.icon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Nom"
+                        placeholderTextColor={"#444"}
+                        value={inputs.lastName}
+                        onChangeText={(text) => updateInput("lastName", text)}
+                        onSubmitEditing={() => firstNameRef.current?.focus()}
+                      />
+                    </View>
+                    {errors?.lastName && <Text style={styles.error}>{errors.lastName}</Text>}
 
-              {/* Formulaires */}
-              {isConnexionSelected ? (
-                <SafeAreaView style={styles.formArea}>
-                  {/* Connexion */}
-                  <View style={styles.inputContainer}>
-                    <FontAwesome
-                      name="envelope"
-                      size={width * 0.05}
-                      color="#8696BB"
-                      style={styles.icon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="email"
-                      placeholderTextColor={"#444"}
-                      value={inputs.email}
-                      onChangeText={(text) => updateInput("email", text)}
-                      onSubmitEditing={() => passwordRef.current?.focus()}
-                    />
-                  </View>
-                  {errors.email && <Text style={styles.error}>{errors.email}</Text>}
-                  <View style={styles.inputContainer}>
-                    <FontAwesome
-                      name="lock"
-                      size={width * 0.05}
-                      color="#8696BB"
-                      style={styles.icon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="mot de passe"
-                      ref={passwordRef}
-                      placeholderTextColor={"#444"}
-                      secureTextEntry
-                      value={inputs.password}
-                      onChangeText={(text) => updateInput("password", text)}
-                      returnKeyType="done"
-                      onSubmitEditing={Keyboard.dismiss}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.button, isLoginDisabled && styles.disabledButton]}
-                    onPress={handleLogin}
-                    disabled={isLoginDisabled}
-                  >
-                    <Text style={styles.buttonText}>{loading ? "Connexion..." : "Se connecter"}</Text>
-                  </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                      <FontAwesome name="user" size={width * 0.05} color="#8696BB" style={styles.icon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Prénom"
+                        placeholderTextColor={"#444"}
+                        ref={firstNameRef}
+                        value={inputs.firstName}
+                        onChangeText={(text) => updateInput("firstName", text)}
+                        onSubmitEditing={() => addressRef.current?.focus()}
+                      />
+                    </View>
+                    {errors?.firstName && <Text style={styles.error}>{errors.firstName}</Text>}
 
-                  <Text style={styles.footerText}>
-                    <Text style={styles.linkText}>Mot de passe oublié ?</Text>
-                  </Text>
-                  {error && <Text style={styles.error}>{error}</Text>}
-                </SafeAreaView>
-              ) : (
-                <SafeAreaView style={styles.formArea}>
-                  {/* Inscription */}
-                  {!isNextStep ? (
-                    <>
-                      <View style={styles.inputContainer}>
-                        <FontAwesome name="user" size={width * 0.05} color="#8696BB" style={styles.icon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Nom"
-                          placeholderTextColor={"#444"}
-                          value={inputs.lastName}
-                          onChangeText={(text) => updateInput("lastName", text)}
-                          onSubmitEditing={() => firstNameRef.current?.focus()}
-                        />
-                      </View>
-                      {errors?.lastName && <Text style={styles.error}>{errors.lastName}</Text>}
+                    <View style={styles.inputContainer}>
+                      <FontAwesome name="map-marker" size={width * 0.05} color="#8696BB" style={styles.icon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Adresse"
+                        placeholderTextColor={"#444"}
+                        ref={addressRef}
+                        value={inputs.address}
+                        onChangeText={(text) => updateInput("address", text)}
+                        onSubmitEditing={() => phoneRef.current?.focus()}
+                      />
+                    </View>
+                    {errors?.address && <Text style={styles.error}>{errors.address}</Text>}
 
-                      <View style={styles.inputContainer}>
-                        <FontAwesome name="user" size={width * 0.05} color="#8696BB" style={styles.icon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Prénom"
-                          placeholderTextColor={"#444"}
-                          ref={firstNameRef}
-                          value={inputs.firstName}
-                          onChangeText={(text) => updateInput("firstName", text)}
-                          onSubmitEditing={() => addressRef.current?.focus()}
-                        />
-                      </View>
-                      {errors?.firstName && <Text style={styles.error}>{errors.firstName}</Text>}
+                    <View style={styles.inputContainer}>
+                      <FontAwesome name="phone" size={width * 0.05} color="#8696BB" style={styles.icon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Numéro de téléphone"
+                        placeholderTextColor={"#444"}
+                        ref={phoneRef}
+                        keyboardType="numeric"
+                        value={inputs.phone}
+                        onChangeText={(text) => updateInput("phone", text)}
+                        returnKeyType="done"
+                        onSubmitEditing={Keyboard.dismiss}
+                      />
+                    </View>
+                    {errors?.phone && <Text style={styles.error}>{errors.phone}</Text>}
 
-                      <View style={styles.inputContainer}>
-                        <FontAwesome name="map-marker" size={width * 0.05} color="#8696BB" style={styles.icon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Adresse"
-                          placeholderTextColor={"#444"}
-                          ref={addressRef}
-                          value={inputs.address}
-                          onChangeText={(text) => updateInput("address", text)}
-                          onSubmitEditing={() => phoneRef.current?.focus()}
-                        />
-                      </View>
-                      {errors?.address && <Text style={styles.error}>{errors.address}</Text>}
+                    <TouchableOpacity
+                      style={[styles.button, isNextStepDisabled && styles.disabledButton]}
+                      onPress={toggleNextStep}
+                      disabled={isNextStepDisabled}
+                    >
+                      <Text style={styles.buttonText}>Suivant</Text>
+                    </TouchableOpacity>
 
-                      <View style={styles.inputContainer}>
-                        <FontAwesome name="phone" size={width * 0.05} color="#8696BB" style={styles.icon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Numéro de téléphone"
-                          placeholderTextColor={"#444"}
-                          ref={phoneRef}
-                          keyboardType="numeric"
-                          value={inputs.phone}
-                          onChangeText={(text) => updateInput("phone", text)}
-                          returnKeyType="done"
-                          onSubmitEditing={Keyboard.dismiss}
-                        />
-                      </View>
-                      {errors?.phone && <Text style={styles.error}>{errors.phone}</Text>}
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.inputContainer}>
+                      <FontAwesome name="envelope" size={width * 0.05} color="#8696BB" style={styles.icon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Email"
+                        placeholderTextColor={"#444"}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        value={inputs.email}
+                        onChangeText={(text) => updateInput("email", text)}
+                        onSubmitEditing={() => passwordRef.current?.focus()}
+                      />
+                    </View>
+                    {errors?.email && <Text style={styles.error}>{errors.email}</Text>}
 
-                      <TouchableOpacity
-                        style={[styles.button, isNextStepDisabled && styles.disabledButton]}
-                        onPress={toggleNextStep}
-                        disabled={isNextStepDisabled}
-                      >
-                        <Text style={styles.buttonText}>Suivant</Text>
-                      </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                      <FontAwesome name="lock" size={width * 0.05} color="#8696BB" style={styles.icon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Mot de passe"
+                        placeholderTextColor={"#444"}
+                        ref={passwordRef}
+                        secureTextEntry
+                        value={inputs.password}
+                        onChangeText={(text) => updateInput("password", text)}
+                        onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                      />
+                    </View>
+                    {errors?.password && <Text style={styles.error}>{errors.password}</Text>}
 
-                    </>
-                  ) : (
-                    <>
-                      <View style={styles.inputContainer}>
-                        <FontAwesome name="envelope" size={width * 0.05} color="#8696BB" style={styles.icon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Email"
-                          placeholderTextColor={"#444"}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          value={inputs.email}
-                          onChangeText={(text) => updateInput("email", text)}
-                          onSubmitEditing={() => passwordRef.current?.focus()}
-                        />
-                      </View>
-                      {errors?.email && <Text style={styles.error}>{errors.email}</Text>}
+                    <View style={styles.inputContainer}>
+                      <FontAwesome name="lock" size={width * 0.05} color="#8696BB" style={styles.icon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Confirmer le mot de passe"
+                        placeholderTextColor={"#444"}
+                        ref={confirmPasswordRef}
+                        secureTextEntry
+                        value={inputs.confirmpassword}
+                        onChangeText={(text) => updateInput("confirmpassword", text)}
+                        returnKeyType="done"
+                        onSubmitEditing={Keyboard.dismiss}
+                      />
+                    </View>
+                    {errors?.confirmpassword && <Text style={styles.error}>{errors.confirmpassword}</Text>}
 
-                      <View style={styles.inputContainer}>
-                        <FontAwesome name="lock" size={width * 0.05} color="#8696BB" style={styles.icon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Mot de passe"
-                          placeholderTextColor={"#444"}
-                          ref={passwordRef}
-                          secureTextEntry
-                          value={inputs.password}
-                          onChangeText={(text) => updateInput("password", text)}
-                          onSubmitEditing={() => confirmPasswordRef.current?.focus()}
-                        />
-                      </View>
-                      {errors?.password && <Text style={styles.error}>{errors.password}</Text>}
+                    <TouchableOpacity
+                      style={[styles.button, (isRegisterDisabled || loading) && styles.disabledButton]}
+                      onPress={handleRegister}
+                      disabled={isRegisterDisabled || loading}
+                    >
+                      <Text style={styles.buttonText}>
+                        {loading ? "Chargement..." : "Valider"}
+                      </Text>
+                    </TouchableOpacity>
 
-                      <View style={styles.inputContainer}>
-                        <FontAwesome name="lock" size={width * 0.05} color="#8696BB" style={styles.icon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Confirmer le mot de passe"
-                          placeholderTextColor={"#444"}
-                          ref={confirmPasswordRef}
-                          secureTextEntry
-                          value={inputs.confirmpassword}
-                          onChangeText={(text) => updateInput("confirmpassword", text)}
-                          returnKeyType="done"
-                          onSubmitEditing={Keyboard.dismiss}
-                        />
-                      </View>
-                      {errors?.confirmpassword && <Text style={styles.error}>{errors.confirmpassword}</Text>}
 
-                      <TouchableOpacity
-                        style={[styles.button, isRegisterDisabled && styles.disabledButton]}
-                        onPress={handleRegister}
-                        disabled={isRegisterDisabled}
-                      >
-                        <Text style={styles.buttonText}>{loading ? "Inscription..." : "Valider"}</Text>
-                      </TouchableOpacity>
-
-                      {error && <Text style={styles.error}>{error}</Text>}
-                    </>
-                  )}
-                </SafeAreaView>
-              )}
-            </View>
-          </KeyboardAwareScrollView>
-        </KeyboardAvoidingView>
-      </>
-    );
-  });
+                    {error && <Text style={styles.error}>{error}</Text>}
+                  </>
+                )}
+              </SafeAreaView>
+            )}
+          </View>
+        </KeyboardAwareScrollView>
+      </KeyboardAvoidingView>
+    </>
+  );
+});
 
 const styles = StyleSheet.create({
   imageContainer: {

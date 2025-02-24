@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { auth, db } from "../services/firebaseConfig";
 import { getDoc, setDoc, doc } from "firebase/firestore";
 
@@ -73,10 +73,14 @@ export const useAuthViewModel = () => {
   const updateInput = (field: keyof typeof inputs, value: string) => {
     const errorMsg = validateInput(field, value);
 
+    if (field === "email") {
+      value = value.toLowerCase(); // 🔥 Convertir en minuscule
+    }  
+
     setErrors((prev) => ({
       ...prev,
       [field]: errorMsg || undefined, // Stocke l'erreur seulement si elle existe
-    }));
+    }));  
 
     setInputs((prev) => ({
       ...prev,
@@ -91,19 +95,18 @@ export const useAuthViewModel = () => {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, inputs.email, inputs.password);
+      const email = inputs.email.toLowerCase();  // 🔥 Convertir ici aussi
+      const userCredential = await signInWithEmailAndPassword(auth, email, inputs.password);
       const user = userCredential.user;
-
-      // Récupérer les données utilisateur depuis Firestore
+  
       const userDoc = await getDoc(doc(db, "users", user.uid));
-
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        setRole(userData.role);  // Affecter le rôle récupéré depuis Firestore
+        setRole(userData.role);
       } else {
         setError("Utilisateur introuvable.");
       }
-
+  
       setLoading(false);
       return user;
     } catch (err: any) {
@@ -111,46 +114,37 @@ export const useAuthViewModel = () => {
       setLoading(false);
       throw err;
     }
-  };
+  };  
 
 
   // Fonction d'inscription avec Firebase
   const handleRegister = async () => {
     setLoading(true);
     setError(null);
-
-    // Stocker toutes les erreurs détectées
-    let newErrors: { [key in keyof typeof inputs]?: string } = {};
-    let hasError = false;
-
-    for (const field in inputs) {
-      const errorMsg = validateInput(field as keyof typeof inputs, inputs[field as keyof typeof inputs]);
-      if (errorMsg) {
-        newErrors[field as keyof typeof inputs] = errorMsg;
-        hasError = true;
-      }
-    }
-
-    // Si une erreur existe, on les affiche et on arrête l'inscription
-    if (hasError) {
-      setErrors(newErrors);
-      setLoading(false);
-      return;
-    }
-
+  
     try {
+      const email = inputs.email.toLowerCase();
+  
+      // ✅ Vérifier si l'email est déjà utilisé AVANT de créer le compte
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      if (signInMethods.length > 0) {
+        setError("Cet email est déjà utilisé.");
+        setLoading(false);
+        return;
+      }
+  
       if (inputs.password !== inputs.confirmpassword) {
         setErrors((prev) => ({ ...prev, confirmpassword: "Les mots de passe ne correspondent pas." }));
         setLoading(false);
         return;
       }
-
-      const userCredential = await createUserWithEmailAndPassword(auth, inputs.email, inputs.password);
+  
+      const userCredential = await createUserWithEmailAndPassword(auth, email, inputs.password);
       const user = userCredential.user;
-
+  
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        email: inputs.email,
+        email: email,
         firstName: inputs.firstName,
         lastName: inputs.lastName,
         address: inputs.address,
@@ -158,16 +152,39 @@ export const useAuthViewModel = () => {
         role: "user",
         createdAt: new Date(),
       });
-
+  
       setRole("user");
       setLoading(false);
       return user;
     } catch (err: any) {
-      setError(err.message || "Erreur lors de l’inscription.");
+      const errorMessage = translateFirebaseError(err.code);
+      setError(errorMessage);
       setLoading(false);
       throw err;
     }
   };
+  
+
+  const translateFirebaseError = (code: string): string => {
+    switch (code) {
+      case "auth/email-already-in-use":
+        return "Cet email est déjà utilisé. Essayez de vous connecter.";
+      case "auth/invalid-email":
+        return "L'adresse email est invalide. Vérifiez votre saisie.";
+      case "auth/weak-password":
+        return "Mot de passe trop faible. Minimum 6 caractères.";
+      case "auth/wrong-password":
+        return "Mot de passe incorrect. Réessayez ou réinitialisez-le.";
+      case "auth/user-not-found":
+        return "Aucun compte trouvé avec cet email.";
+      case "auth/too-many-requests":
+        return "Trop de tentatives. Réessayez plus tard.";
+      default:
+        return "Une erreur s'est produite. Vérifiez votre connexion internet.";
+    }
+  };
+  
+
 
   const validateInput = (field: keyof typeof inputs, value: string): string | null => {
     switch (field) {
@@ -175,19 +192,23 @@ export const useAuthViewModel = () => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           return "Email invalide.";
         }
-        if (/[^\w@.]/.test(value)) {  // Vérifie qu'il n'y a pas d'emojis ou caractères spéciaux interdits
-          return "L'email ne doit contenir que des lettres, chiffres et '@ .'";
-        }
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
+          return "Email invalide.";
+        }        
         break;
 
-      case "password":
-        if (value.length < 6) {
-          return "Le mot de passe doit contenir au moins 6 caractères.";
-        }
-        if (!/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
-          return "Le mot de passe doit contenir une majuscule, un chiffre et un caractère spécial.";
-        }
-        break;
+        case "password":
+          if (value.length < 6 || value.length > 20) {
+            return "Le mot de passe doit contenir entre 6 et 20 caractères.";
+          }
+          if (/\s/.test(value)) {
+            return "Le mot de passe ne doit pas contenir d'espaces.";
+          }
+          if (!/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+            return "Le mot de passe doit contenir une majuscule, un chiffre et un caractère spécial.";
+          }
+          break;
+        
 
       case "confirmpassword":
         if (value !== inputs.password) {
