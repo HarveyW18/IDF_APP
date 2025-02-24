@@ -1,9 +1,14 @@
-import { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import { useRouter } from "expo-router";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, onAuthStateChanged, signOut} from 'firebase/auth';
 import { auth, db } from "../services/firebaseConfig";
 import { getDoc, setDoc, doc } from "firebase/firestore";
 
 export const useAuthViewModel = () => {
+
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
   // État pour la sélection entre "Connexion" et "Inscription"
   const [isConnexionSelected, setIsConnexionSelected] = useState(true);
 
@@ -39,6 +44,16 @@ export const useAuthViewModel = () => {
   // État pour gérer le chargement et les erreurs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Observer l'état de connexion Firebase
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        setUser(firebaseUser);
+        setLoading(false);
+    });
+    return () => unsubscribe();
+}, []);
+
 
   // Gestionnaire pour basculer entre "Connexion" et "Inscription"
   const toggleConnexion = (isSelected: boolean) => {
@@ -108,6 +123,7 @@ export const useAuthViewModel = () => {
       }
   
       setLoading(false);
+      router.replace("/");
       return user;
     } catch (err: any) {
       setError(err.message || "Erreur de connexion.");
@@ -155,12 +171,23 @@ export const useAuthViewModel = () => {
   
       setRole("user");
       setLoading(false);
+      router.replace("/");
       return user;
     } catch (err: any) {
       const errorMessage = translateFirebaseError(err.code);
       setError(errorMessage);
       setLoading(false);
       throw err;
+    }
+  };
+
+  // Fonction de déconnexion
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (err) {
+      console.error("Erreur lors de la déconnexion", err);
     }
   };
   
@@ -253,6 +280,8 @@ export const useAuthViewModel = () => {
     updateInput,
     handleLogin,
     handleRegister,
+    handleLogout,
+    user,
     loading,
     error,
     role,

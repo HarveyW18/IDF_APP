@@ -69,6 +69,23 @@ function RootLayoutNav() {
             headerShown: false,
           }}
         />
+
+        {/* Route pour la page homr client */}
+        <Stack.Screen
+          name="HomeScreen"
+          options={{
+            headerShown: false,
+          }}
+        />
+
+
+        {/* 🔹 Ajouter la page de recherche de trajets */}
+        <Stack.Screen
+          name="SearchScreen"
+          options={{
+            headerShown: false
+          }}
+        />
       </Stack>
     </ThemeProvider>
   );
