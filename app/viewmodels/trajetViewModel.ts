@@ -1,31 +1,54 @@
 import { useState } from "react";
 import { obtenirItineraires } from "../services/itineraireService";
 
+// 🔹 Définition du type des trajets
+interface Section {
+    id: string;
+    type: string;
+    departure: { time: string; place: { name?: string } };
+    arrival: { time: string; place: { name?: string } };
+    transport?: { mode?: string; name?: string; category?: string; color?: string; headsign?: string };
+}
+
+interface Trajet {
+    summary?: { duration?: number };
+    sections: Section[];
+}
+
 const useTrajetViewModel = () => {
-    const [trajets, setTrajets] = useState<any[]>([]);
+    const [trajets, setTrajets] = useState<Trajet[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    /**
-     * Charge les itinéraires pour un trajet donné.
-     */
     const chargerItineraires = async (depart: string, arrivee: string) => {
         setLoading(true);
         setError(null);
 
         try {
-            console.log("🔍 Recherche d'itinéraire pour :", depart, "➡️", arrivee);
+            console.log("🔍 [useTrajetViewModel] Recherche d'itinéraire pour :", depart, "➡️", arrivee);
             const data = await obtenirItineraires(depart, arrivee);
 
             if (data && data.length > 0) {
-                console.log(`✅ ${data.length} itinéraires trouvés.`);
-                setTrajets(data.slice(0, 10)); // Afficher au maximum 10 trajets
+                console.log("✅ [useTrajetViewModel] Itinéraires trouvés :", JSON.stringify(data, null, 2));
+
+                const trajetsComplets: Trajet[] = data.map((route: Trajet) => {
+                    console.log("🔍 [DEBUG] Sections du trajet :", route.sections);
+                    return {
+                        summary: route.summary || { duration: 0 },
+                        sections: route.sections || [],
+                    };
+                });
+                
+                console.log("✅ [useTrajetViewModel] Trajets complets :", trajetsComplets);              
+                console.log("🔍 [DEBUG] Trajets avant setTrajets :", JSON.stringify(trajetsComplets, null, 2));
+                setTrajets(trajetsComplets);
             } else {
-                setError("❌ Aucun itinéraire trouvé.");
+                console.warn("❌ [useTrajetViewModel] Aucun itinéraire trouvé.");
                 setTrajets([]);
+                setError("Aucun itinéraire trouvé.");
             }
         } catch (err) {
-            console.error("❌ Erreur lors de la récupération des itinéraires :", err);
+            console.error("❌ [useTrajetViewModel] Erreur lors de la récupération des itinéraires :", err);
             setError("Erreur lors de la récupération des itinéraires.");
         }
 

@@ -1,38 +1,32 @@
-import { HERE_API_KEY } from "../../app/config";
+const GOOGLE_API_KEY = "AIzaSyBvAplrV7rAAsAJrP110Tct1FCJWF2oYrg";
 
-const BASE_GEOCODE_URL = "https://geocode.search.hereapi.com/v1/geocode";
-const BASE_TRANSIT_URL = "https://transit.router.hereapi.com/v8/routes";
-
-// 🔥 Clé d'API brute pour les tests
-const HERE_ACCESS_TOKEN = "eyJhbGciOiJSUzUxMiIsImN0eSI6IkpXVCIsImlzcyI6IkhFUkUiLCJhaWQiOiJxT0RtRGpVU0NmenAyZ0J2a0tRNiIsImlhdCI6MTc0MDQ3NzU4MywiZXhwIjoxNzQwNTYzOTgzLCJraWQiOiJqMSJ9.ZXlKaGJHY2lPaUprYVhJaUxDSmxibU1pT2lKQk1qVTJRMEpETFVoVE5URXlJbjAuLnczZ244alhPWHFYam5XOGRHNEFreVEucWNfUUJWclJyaV9TNlk1T1dwMVFNOWU2SmYzTUg0Mzd4RmJRbWJqbE1oOHpEMkFBS0o0Z3lKWGpyS2J1ZW9xcnlJVnhFYTNEbW1XX05Id29Bb20ycjlqOGNLdkNqM0thVmxnelFQRHZNbU1QbU04WnRLMjBRT1JadEpYTTVnbHJ2MVNfWk00WEZHVHJ1VG85TURDNWlYaXdhdUdVNlJWU1I5OTAyVldIVWtnLkRGaXVyR09OLVFRRHlIVVJhbXlMWmZSS01iamVPczBBc1I4elhLYkJpOHM.seRoqLMhXyu9CgvSohxPHclTFZkNR4VUZtJw4p5CBWRPxJvw25-81WO25yoex5JoV3NMd4M8Ex1SwsMk4uaKQtAgWTiCPbIOT_EDn_oeqepoYksWFXTjv_4W7izbzGDF1uFILU1eRNWwzVCA8puuiA1yOIPjcnDXT7zjPHBPfHI2QB2EfcJmlHx3PfvLmmzZtdeOJaWfVU6Zcvmlwuj_t_PZIlu_qm5Wddy6qsRevsfw7IcKizwx3RWyth7tE3eWytrhRkgJlVzy-YsPvqThHO0rcUP-L6nzftqDHQjvk7dhZd3MkO78Ld3luyHoXo12Fpe5KJbvZHoDAkNZugHlWA";
+const BASE_GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json";
+const BASE_DIRECTIONS_URL = "https://maps.googleapis.com/maps/api/directions/json";
 
 /**
- * Convertit une adresse en coordonnées GPS via l'API de géocodage de HERE.
+ * Convertit une adresse en coordonnées GPS via Google Maps Geocoding API.
  */
 export const obtenirCoordonnees = async (adresse: string): Promise<string | null> => {
     try {
-        const response = await fetch(`${BASE_GEOCODE_URL}?q=${encodeURIComponent(adresse)}&apiKey=${HERE_API_KEY}`);
+        const response = await fetch(`${BASE_GEOCODE_URL}?address=${encodeURIComponent(adresse)}&key=${GOOGLE_API_KEY}`);
         const data = await response.json();
 
-        console.log("📩 Réponse API GEOCODING :", JSON.stringify(data, null, 2));
-
-        if (data.items && data.items.length > 0) {
-            const { lat, lng } = data.items[0].position;
-            console.log(`✅ Adresse trouvée : ${data.items[0].address.label} (${lat},${lng})`);
-            return `${lat},${lng}`;
-        } else {
+        if (data.status !== "OK" || !data.results.length) {
             console.warn(`⚠️ Aucune coordonnée trouvée pour : ${adresse}`);
             return null;
         }
+
+        const { lat, lng } = data.results[0].geometry.location;
+        console.log(`✅ Adresse trouvée : ${data.results[0].formatted_address} (${lat},${lng})`);
+        return `${lat},${lng}`;
     } catch (error) {
         console.error("❌ Erreur lors du géocodage :", error);
         return null;
     }
 };
 
-
 /**
- * Récupère les itinéraires en transports en commun entre deux points.
+ * Récupère les itinéraires en transports en commun entre deux points via Google Maps Directions API.
  */
 export const obtenirItinerairesTransit = async (depart: string, arrivee: string) => {
     const coordsDepart = await obtenirCoordonnees(depart);
@@ -43,56 +37,66 @@ export const obtenirItinerairesTransit = async (depart: string, arrivee: string)
     }
 
     try {
-        // Construction de l'URL identique à cURL
-        const url = `https://transit.router.hereapi.com/v8/routes?origin=${coordsDepart}&destination=${coordsArrivee}`;
+        const url = `${BASE_DIRECTIONS_URL}?origin=${coordsDepart}&destination=${coordsArrivee}&mode=transit&alternatives=true&key=${GOOGLE_API_KEY}`;
+        console.log("🚀 URL API Google Maps Directions :", url);
 
-        console.log("🚀 URL API HERE Public Transit : ", url);
-
-        // Requête avec Bearer Token
-        const response = await fetch(url, {
-            method: "GET",
-            headers: { 
-                "Authorization": `Bearer ${HERE_ACCESS_TOKEN}`
-            },
-        });
-
+        const response = await fetch(url);
         const data = await response.json();
-        console.log("📩 Réponse API Transit :", JSON.stringify(data, null, 2));
 
-        if (!data.routes || data.routes.length === 0) {
-            throw new Error("❌ Aucun itinéraire en transport en commun trouvé.");
-        }
+        if (data.status !== "OK" || !data.routes.length || !data.routes[0].legs || !data.routes[0].legs[0].steps) {
+            console.warn("⚠️ Aucune section trouvée dans l'itinéraire.");
+            return [];
+        }        
 
-        // 🔥 Transformer les itinéraires pour inclure `summary.duration`
-        const itinerairesTransformes = data.routes.map((route: any) => {
-            const sections = route.sections || [];
-            if (sections.length === 0) return null;
+        return data.routes.slice(0, 20).map((route: any) => {
+            const legs = route.legs || [];
+            if (legs.length === 0) return null;
 
-            // 🕒 Calcul de la durée totale du trajet
-            const heureDepart = new Date(sections[0].departure.time);
-            const heureArrivee = new Date(sections[sections.length - 1].arrival.time);
-            const dureeMinutes = Math.round((heureArrivee.getTime() - heureDepart.getTime()) / 60000);
+            const sections = legs.flatMap((leg: any) =>
+                leg.steps.map((step: any) => {
+                    const isTransit = step.travel_mode === "TRANSIT";
+                    return {
+                        id: step.html_instructions || "Step",
+                        type: step.travel_mode.toLowerCase(),
+                        departure: {
+                            time: isTransit ? leg.departure_time?.text || "" : "",
+                            place: { name: isTransit ? step.transit_details?.departure_stop?.name || "Départ inconnu" : "Départ inconnu" },
+                        },
+                        arrival: {
+                            time: isTransit ? leg.arrival_time?.text || "" : "",
+                            place: { name: isTransit ? step.transit_details?.arrival_stop?.name || "Arrivée inconnue" : "Arrivée inconnue" },
+                        },
+                        transport: isTransit
+                            ? {
+                                mode: step.transit_details.line.vehicle.type.toLowerCase(),
+                                name: step.transit_details.line.short_name || step.transit_details.line.name || "Ligne inconnue",
+                                category: step.transit_details.line.vehicle.name || "unknown",
+                                color: step.transit_details.line.color || "#007AFF",
+                                headsign: step.transit_details.headsign || "",
+                            }
+                            : undefined,
+                    };
+                })
+            );
+            
 
             return {
-                summary: { duration: dureeMinutes * 60 }, // Converti en secondes pour rester cohérent
-                sections: sections
+                summary: { duration: legs.reduce((total: number, leg: any) => total + (leg.duration?.value || 0), 0) },
+                sections,
             };
         }).filter(Boolean);
-
-        return itinerairesTransformes;
     } catch (error) {
-        console.error("❌ Erreur API HERE Public Transit :", error);
+        console.error("❌ Erreur API Google Maps Directions :", error);
         return null;
     }
 };
 
-
 /**
- * ✅ Assure que `obtenirItineraires` est bien exporté
+ * ✅ Fonction principale pour récupérer les itinéraires.
  */
 export const obtenirItineraires = async (depart: string, arrivee: string) => {
     try {
-        console.log(`🔍 Recherche d'itinéraire en transport en commun pour : ${depart} ➡️ ${arrivee}`);
+        console.log(`🔍 Recherche d'itinéraire pour : ${depart} ➡️ ${arrivee}`);
         return await obtenirItinerairesTransit(depart, arrivee);
     } catch (error) {
         console.error("🚨 Erreur lors de l'obtention des itinéraires :", error);

@@ -31,10 +31,12 @@ const SearchScreen = () => {
 
         try {
             const result = await obtenirItineraires(depart, arrivee);
+            console.log("🎯 Résultat des itinéraires :", result);
             if (result && result.length > 0) {
-                setTrajets(result[0].sections || []);
+                console.log("✅ [DEBUG] Trajets trouvés :", JSON.stringify(result, null, 2));
+                setTrajets(result); // On stocke toute la structure et pas juste `sections`
             } else {
-                setError("Aucun itinéraire trouvé.");
+                console.warn("❌ Aucun itinéraire trouvé.");
                 setTrajets([]);
             }
         } catch (err) {
@@ -51,9 +53,9 @@ const SearchScreen = () => {
             <CustomHeader title="Recherche" />
             {/* 📍 Départ & Arrivée */}
             <View style={styles.inputContainer}>
-                <SearchBar label="Départ" placeholder="Entrez un lieu de départ" onSelect={setDepart} value={depart} />
+                <SearchBar label="Départ" placeholder="Entrez une station de départ" onSelect={setDepart} value={depart} />
 
-                <SearchBar label="Arrivée" placeholder="Entrez un lieu d’arrivée" onSelect={setArrivee} value={arrivee} />
+                <SearchBar label="Arrivée" placeholder="Entrez une station d’arrivée" onSelect={setArrivee} value={arrivee} />
             </View>
 
 
@@ -70,7 +72,7 @@ const SearchScreen = () => {
             </View>
 
             <TouchableOpacity style={styles.button} onPress={chercherTrajets}>
-                <Text style={styles.buttonText}>🔍 Rechercher Trajet</Text>
+                <Text style={styles.buttonText}>🔍 <Text>Rechercher Trajet</Text></Text>
             </TouchableOpacity>
 
             {hasSearched && <View style={styles.separator} />}
@@ -82,7 +84,7 @@ const SearchScreen = () => {
                         : error ? <Text style={styles.error}>{error}</Text>
                             : trajets.length === 0 ? <Text style={styles.noResult}>Aucun trajet disponible</Text>
                                 : <FlatList
-                                    data={trajets}
+                                    data={trajets} // ✅ On affiche les 7 trajets trouvés
                                     keyExtractor={(item, index) => index.toString()}
                                     renderItem={({ item }) => <TrajetCard trajet={item} />}
                                     contentContainerStyle={{ paddingBottom: 90 }} // 📌 Espace pour la navbar

@@ -1,43 +1,52 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { HERE_API_KEY } from "../../IDF_APP/app/config";
+import { GOOGLE_API_KEY } from "../../IDF_APP/app/config"; // ✅ Utilisation du fichier de config
+
+const BASE_AUTOCOMPLETE_URL = "https://maps.googleapis.com/maps/api/place/autocomplete/json";
 
 interface SearchBarProps {
     placeholder: string;
     onSelect: (address: string) => void;
     value: string;
-    label?: string; // Ajout d'un label optionnel (Départ / Arrivée)
+    label?: string; // Label optionnel (Départ / Arrivée)
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect, value, label }) => {
-    const [query, setQuery] = React.useState(value);
-    const [suggestions, setSuggestions] = React.useState<{ id: string; address: { label: string } }[]>([]);
-    const [focused, setFocused] = React.useState(false);
+    const [query, setQuery] = useState(value);
+    const [suggestions, setSuggestions] = useState<{ place_id: string; description: string }[]>([]);
+    const [focused, setFocused] = useState(false);
 
+    /**
+     * 🔎 Fait une requête à Google Places API pour obtenir des suggestions d'adresses.
+     */
     const fetchSuggestions = async (text: string) => {
         if (!text) {
             setSuggestions([]);
             return;
         }
 
-        const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(text)}&apiKey=${HERE_API_KEY}`;
+        const url = `${BASE_AUTOCOMPLETE_URL}?input=${encodeURIComponent(text)}&key=${GOOGLE_API_KEY}&types=geocode&language=fr`;
 
         try {
             const response = await fetch(url);
             const data = await response.json();
-            if (data.items) {
-                setSuggestions(data.items);
+
+            if (data.predictions) {
+                setSuggestions(data.predictions.map((item: any) => ({
+                    place_id: item.place_id,
+                    description: item.description
+                })));
             }
         } catch (error) {
-            console.error("Erreur API HERE :", error);
+            console.error("❌ Erreur API Google Places :", error);
         }
     };
 
     return (
         <View style={styles.container}>
             <View style={[styles.searchContainer, focused && styles.searchFocused]}>
-                {label && <Text style={styles.label}>{label}</Text>} {/* Label si présent */}
+                {label && <Text style={styles.label}>{label}</Text>}
                 <TextInput
                     style={styles.input}
                     placeholder={placeholder}
@@ -55,19 +64,19 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect, value, lab
             {suggestions.length > 0 && (
                 <FlatList
                     data={suggestions}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item.place_id}
                     style={styles.suggestionsList}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.suggestionItem}
                             activeOpacity={0.7}
                             onPress={() => {
-                                onSelect(item.address.label);
-                                setQuery(item.address.label);
+                                onSelect(item.description);
+                                setQuery(item.description);
                                 setSuggestions([]);
                             }}
                         >
-                            <Text style={styles.suggestionText}>{item.address.label}</Text>
+                            <Text style={styles.suggestionText}>{item.description}</Text>
                         </TouchableOpacity>
                     )}
                 />
@@ -98,9 +107,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
     },
     label: {
-        fontSize: 12, // Plus petit que le texte de recherche
-        color: "#007bff", // Bleu cohérent avec ton app
-        marginRight: 8, // Espace avant le champ
+        fontSize: 12,
+        color: "#007bff",
+        marginRight: 8,
     },
     input: {
         flex: 1,
