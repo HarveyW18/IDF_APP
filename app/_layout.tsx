@@ -47,51 +47,25 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        {/* Route pour la page d'accueil (ou par défaut) */}
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-
-        {/* Route pour afficher une page modale */}
+      <Stack 
+        screenOptions={{ headerShown: false }}  // 🔥 Supprime l'en-tête globalement
+      >
+        {/* ✅ Pages sans en-tête */}
+        <Stack.Screen name="index" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="authuser" />
+        <Stack.Screen name="authagent" />
+        <Stack.Screen name="views/client/HomeScreen" />
 
-        {/* Route pour la page de connexion utilisateur */}
-        <Stack.Screen
-          name="authuser"
-          options={{
-            headerShown: false,
-          }}
-        />
-
-        {/* Route pour la page de connexion agent */}
-        <Stack.Screen
-          name="authagent"
-          options={{
-            headerShown: false,
-          }}
-        />
-
-        {/* Route pour la page homr client */}
-        <Stack.Screen
-          name="HomeScreen"
-          options={{
-            headerShown: false,
-          }}
-        />
-
-
-        {/* 🔹 Ajouter la page de recherche de trajets */}
-        <Stack.Screen
+        {/* ✅ Pages AVEC en-tête */}
+        <Stack.Screen 
           name="views/client/SearchScreen"
           options={{
-            headerShown: false
-          }}
-        />
-
-        <Stack.Screen
-          name="views/client/ResultsScreen"
-          options={{
-            headerShown: false
-          }}
+            headerShown: true, 
+            title: "Recherche",
+            headerStyle: { backgroundColor: "#3C85FF" },  // 🎨 Style personnalisé de l'en-tête
+            headerTintColor: "white",  // 🖌️ Couleur du texte de l'en-tête
+          }} 
         />
       </Stack>
     </ThemeProvider>

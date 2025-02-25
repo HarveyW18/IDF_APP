@@ -1,33 +1,44 @@
-import React from "react";
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { useRouter, usePathname } from "expo-router";
+import { View, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useEffect, useRef } from "react";
 
 const Navbar = () => {
-    const navigation = useNavigation();
+    const router = useRouter();
+    const pathname = usePathname(); // 🔥 Récupérer la page actuelle
+
+    const pages = [
+        { route: "/views/client/Home", icon: "home", lib: Ionicons },
+        { route: "/views/client/SearchScreen", icon: "bus-multiple", lib: MaterialCommunityIcons },
+        { route: "/messages", icon: "comments", lib: FontAwesome },
+        { route: "/profile", icon: "person-outline", lib: Ionicons },
+    ];
 
     return (
         <View style={styles.container}>
-            {/* Accueil */}
-            <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate("HomeScreen")}>
-                <Ionicons name="home" size={24} color="white" />
-                <Text style={styles.activeText}>Accueil</Text>
-            </TouchableOpacity>
+            {pages.map((page) => {
+                const isActive = page.route === pathname;
+                const scaleValue = useRef(new Animated.Value(isActive ? 1.2 : 1)).current;
 
-            {/* Transports */}
-            <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate("TransportsScreen")}>
-                <MaterialCommunityIcons name="bus-multiple" size={24} color="white" />
-            </TouchableOpacity>
+                useEffect(() => {
+                    Animated.timing(scaleValue, {
+                        toValue: isActive ? 1.2 : 1,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start();
+                }, [isActive]);
 
-            {/* Messages */}
-            <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate("MessagesScreen")}>
-                <FontAwesome name="comments" size={22} color="white" />
-            </TouchableOpacity>
-
-            {/* Profil */}
-            <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate("ProfileScreen")}>
-                <Ionicons name="person-outline" size={24} color="white" />
-            </TouchableOpacity>
+                return (
+                    <TouchableOpacity key={page.route} style={styles.navItem} onPress={() => router.push(page.route)}>
+                        <View style={{ position: "relative", alignItems: "center", justifyContent: "center" }}>
+                            {isActive && <View style={styles.activeBackground} />}
+                            <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+                                <page.lib name={page.icon} size={24} color="white" />
+                            </Animated.View>
+                        </View>
+                    </TouchableOpacity>
+                );
+            })}
         </View>
     );
 };
@@ -38,6 +49,8 @@ const styles = StyleSheet.create({
         bottom: 20, // Légèrement détaché du bas
         left: 20,
         right: 20,
+        height: 70, // Augmente la hauteur de la navbar
+        padding: 15,
         flexDirection: "row",
         backgroundColor: "#3C85FF",
         paddingVertical: 12,
@@ -55,11 +68,17 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 10,
     },
-    activeText: {
-        color: "white",
-        fontSize: 14,
-        fontWeight: "bold",
-        marginTop: 2,
+    activeBackground: {
+        position: "absolute",
+        width: 65, // Taille du cercle autour de l'icône
+        height: 60,
+        borderRadius: 25,
+        backgroundColor: "rgba(255, 255, 255, 0.2)", // Bleu clair avec transparence
+        justifyContent: "center",
+        alignItems: "center",
+        top: -18, // Correction du placement vertical
+        left: "50%",
+        marginLeft: -33, // Centrage horizontal
     },
 });
 

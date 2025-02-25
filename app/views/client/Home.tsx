@@ -1,11 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { View, Text, Image, StyleSheet, Animated, TouchableOpacity } from "react-native";
 import { useAuthViewModel } from "../../viewmodels/authViewModel";
-import { WebView } from "react-native-webview";
-import { getHereMapHTML } from "../../viewmodels/HereMapViewModel";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Navbar from "../../../components/Navbar";
+import MapComponent from "../../../components/MapComponent"; // 🔥 Import de la carte
 
 const HomeScreen = () => {
     const { user } = useAuthViewModel();
@@ -13,44 +12,26 @@ const HomeScreen = () => {
     const slideAnim = useRef(new Animated.Value(0)).current;
     const router = useRouter();
 
-    // Fonction pour gérer l'animation avant la navigation
     const handlePress = () => {
         Animated.parallel([
-            Animated.timing(fadeAnim, {
-                toValue: 0, // Diminue l'opacité progressivement
-                duration: 400, 
-                useNativeDriver: true,
-            }),
-            Animated.timing(slideAnim, {
-                toValue: -300, // Fait glisser vers la gauche
-                duration: 400,
-                useNativeDriver: true,
-            }),
+            Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+            Animated.timing(slideAnim, { toValue: -300, duration: 400, useNativeDriver: true }),
         ]).start(() => {
-            router.push("/views/client/SearchScreen"); // Navigation après l'animation
+            router.push("/views/client/SearchScreen");
 
-            // Réinitialisation des animations après la navigation
             Animated.parallel([
-                Animated.timing(fadeAnim, {
-                    toValue: 1, // Réaffichage en douceur
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(slideAnim, {
-                    toValue: 0, // Retour à la position initiale
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
+                Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+                Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
             ]).start();
         });
     };
 
     return (
         <View style={styles.container}>
-            {/* 🌍 Carte HERE Maps */}
-            <Animated.View style={[styles.mapContainer, { opacity: fadeAnim }]}>
-                <WebView source={{ html: getHereMapHTML() }} style={styles.map} />
-            </Animated.View>
+            {/* 🌍 Composant de la carte */}
+            <View style={styles.mapContainer}>
+                <MapComponent />
+            </View>
 
             {/* 📌 Carte utilisateur */}
             <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
@@ -61,20 +42,14 @@ const HomeScreen = () => {
                         <Image source={require("../../../assets/avatar/avatar.png")} style={styles.avatar} />
                     </View>
 
-                    {/* 🔍 Barre de recherche animée avec effet de slide */}
                     <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
-                        <TouchableOpacity 
-                            style={styles.searchBar} 
-                            activeOpacity={0.8} 
-                            onPress={handlePress}
-                        >
+                        <TouchableOpacity style={styles.searchBar} activeOpacity={0.8} onPress={handlePress}>
                             <Ionicons name="search" size={20} color="#A0A0A0" />
                             <Text style={styles.searchText}>Rechercher un itinéraire</Text>
                         </TouchableOpacity>
                     </Animated.View>
                 </View>
 
-                {/* 🚀 Barre de navigation incluse dans la card */}
                 <Navbar />
             </Animated.View>
         </View>
@@ -88,16 +63,13 @@ const styles = StyleSheet.create({
     },
     mapContainer: {
         width: "100%",
-        height: "50%",
-    },
-    map: {
-        width: "100%",
-        height: "100%",
+        height: "100%", // 🔥 Augmente la hauteur de la carte pour qu’elle descende sous la carte profil
+        top: 0, // Position en haut
     },
     card: {
         position: "absolute",
-        width: "97%",
-        height: "40%",
+        width: "98%",
+        height: "45%",
         bottom: 0,
         alignSelf: "center",
         backgroundColor: "white",

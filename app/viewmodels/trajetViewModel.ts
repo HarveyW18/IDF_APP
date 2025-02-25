@@ -8,8 +8,6 @@ const useTrajetViewModel = () => {
 
     /**
      * Charge les itinéraires pour un trajet donné.
-     * @param {string} depart Lieu de départ.
-     * @param {string} arrivee Lieu d'arrivée.
      */
     const chargerItineraires = async (depart: string, arrivee: string) => {
         setLoading(true);
@@ -20,10 +18,11 @@ const useTrajetViewModel = () => {
             const data = await obtenirItineraires(depart, arrivee);
 
             if (data && data.length > 0) {
-                console.log("✅ Itinéraires trouvés :", data.length);
-                setTrajets(data[0].sections || []);
+                console.log(`✅ ${data.length} itinéraires trouvés.`);
+                setTrajets(data.slice(0, 10)); // Afficher au maximum 10 trajets
             } else {
                 setError("❌ Aucun itinéraire trouvé.");
+                setTrajets([]);
             }
         } catch (err) {
             console.error("❌ Erreur lors de la récupération des itinéraires :", err);

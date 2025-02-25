@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { HERE_API_KEY } from "../../IDF_APP/app/config";
@@ -6,12 +6,14 @@ import { HERE_API_KEY } from "../../IDF_APP/app/config";
 interface SearchBarProps {
     placeholder: string;
     onSelect: (address: string) => void;
+    value: string;
+    label?: string; // Ajout d'un label optionnel (Départ / Arrivée)
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect }) => {
-    const [query, setQuery] = useState("");
-    const [suggestions, setSuggestions] = useState<{ id: string; address: { label: string } }[]>([]);
-    const [focused, setFocused] = useState(false);
+const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect, value, label }) => {
+    const [query, setQuery] = React.useState(value);
+    const [suggestions, setSuggestions] = React.useState<{ id: string; address: { label: string } }[]>([]);
+    const [focused, setFocused] = React.useState(false);
 
     const fetchSuggestions = async (text: string) => {
         if (!text) {
@@ -35,7 +37,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect }) => {
     return (
         <View style={styles.container}>
             <View style={[styles.searchContainer, focused && styles.searchFocused]}>
-                <Ionicons name="search" size={22} color="#777" style={styles.icon} />
+                {label && <Text style={styles.label}>{label}</Text>} {/* Label si présent */}
                 <TextInput
                     style={styles.input}
                     placeholder={placeholder}
@@ -43,6 +45,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect }) => {
                     onChangeText={(text) => {
                         setQuery(text);
                         fetchSuggestions(text);
+                        onSelect(text); // Met à jour la valeur dans le parent
                     }}
                     onFocus={() => setFocused(true)}
                     onBlur={() => setFocused(false)}
@@ -94,8 +97,10 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFFFFF",
         shadowOpacity: 0.2,
     },
-    icon: {
-        marginRight: 8,
+    label: {
+        fontSize: 12, // Plus petit que le texte de recherche
+        color: "#007bff", // Bleu cohérent avec ton app
+        marginRight: 8, // Espace avant le champ
     },
     input: {
         flex: 1,
