@@ -26,8 +26,8 @@ const getTransportIcon = (mode?: string, category?: string, name?: string) => {
     switch (mode.toLowerCase()) {
         case "bus": return "bus";
         case "subway":
-        case "metro": return "train-subway"; // ✅ Icône métro FA6
-        case "tram": return "train-tram"; // ✅ Icône tramway FA6
+        case "metro": return "train-subway"; 
+        case "tram": return "train-tram";
 
         case "heavy_rail":
         case "train":

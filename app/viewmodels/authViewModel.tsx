@@ -113,6 +113,10 @@ export const useAuthViewModel = () => {
       const email = inputs.email.toLowerCase();  // 🔥 Convertir ici aussi
       const userCredential = await signInWithEmailAndPassword(auth, email, inputs.password);
       const user = userCredential.user;
+
+      // 🔥 Récupérer le token Firebase après connexion
+      const token = await user.getIdToken(true);
+      console.log("🔥 Token après connexion :", token);
   
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {

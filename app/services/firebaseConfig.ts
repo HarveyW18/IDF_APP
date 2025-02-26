@@ -13,6 +13,25 @@ const firebaseConfig = {
   measurementId: "G-8N5EQCC3H8"
 };
 
+export const getFirebaseToken = async () => {
+  const authInstance = getAuth();
+  const user = authInstance.currentUser;
+
+  if (user) {
+      try {
+          const token = await user.getIdToken(true); // 🔥 Récupérer le token
+          console.log("🔥 Token Firebase :", token);
+          return token;
+      } catch (error) {
+          console.error("❌ Erreur lors de la récupération du token Firebase :", error);
+          return null;
+      }
+  } else {
+      console.warn("⚠️ Aucun utilisateur connecté.");
+      return null;
+  }
+};
+
 // Initialiser Firebase
 const app = initializeApp(firebaseConfig);
 
