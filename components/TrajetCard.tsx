@@ -81,10 +81,10 @@ const TrajetCard: React.FC<TrajetProps> = ({ trajet, depart, arrivee }) => {
 
     const walkingMinutes = Math.floor(totalWalkingTime / 60000);
     const transitMinutes = Math.floor(totalTransitTime / 60000);
-    const totalMinutes = walkingMinutes + transitMinutes;
+    const totalMinutes = trajet.summary?.duration ? Math.floor(trajet.summary.duration / 60) : 0;
 
     const departureTime = sections[0]?.departure.time || `${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
-    const arrivalTime = sections[sections.length - 1]?.arrival.time || new Date(now.getTime() + totalMinutes * 60000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const arrivalTime = new Date(now.getTime() + totalMinutes * 60000).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", hour12: false });
 
     let departurePlace = depart;
     for (const section of sections) {
@@ -110,7 +110,6 @@ const TrajetCard: React.FC<TrajetProps> = ({ trajet, depart, arrivee }) => {
             <View style={styles.row}>
                 <Text style={styles.time}>{departureTime} → {arrivalTime}</Text>
                 <Text style={styles.duration}>{formatDuration(totalMinutes)}</Text>
-                {walkingMinutes > 0 && <Text style={styles.walking}>🚶 {walkingMinutes} min</Text>}
             </View>
 
             <View style={styles.transportLine}>

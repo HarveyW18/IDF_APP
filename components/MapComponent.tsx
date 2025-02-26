@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     map: { width: "100%", height: "100%" },
     locateButton: {
         position: "absolute",
-        bottom: 425,
+        bottom: 800,
         right: 20,
         backgroundColor: "#007AFF",
         padding: 14,
