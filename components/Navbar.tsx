@@ -1,21 +1,36 @@
 import { useRouter, usePathname } from "expo-router";
 import { View, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome } from "@expo/vector-icons";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
+import { useAuthViewModel } from "../app/viewmodels/authViewModel"; // 🔥 Import du ViewModel d'authentification
 
 const Navbar = () => {
     const router = useRouter();
     const pathname = usePathname(); // 🔥 Récupérer la page actuelle
+    const { user } = useAuthViewModel(); // 🔥 Récupération de l'utilisateur
 
-    const pages = [
-        { route: "/views/client/Home", icon: "home", lib: Ionicons },
-        { route: "/views/client/SearchScreen", icon: "bus-multiple", lib: MaterialCommunityIcons },
-        { route: "/messages", icon: "comments", lib: FontAwesome },
-        { route: "/profile", icon: "person-outline", lib: Ionicons },
-    ];
+    // ✅ Vérifie si l'utilisateur est agent ou client
+    const isAgent = user?.role === "agent";
+
+    // 🎯 Routes spécifiques selon le rôle
+    const pages = useMemo(() => {
+        return isAgent
+            ? [
+                { route: "/views/agent/Home", icon: "home", lib: Ionicons },
+                { route: "/views/agent/Assistances", icon: "clipboard-list", lib: MaterialCommunityIcons },
+                { route: "/messages", icon: "comments", lib: FontAwesome },
+                { route: "/profile", icon: "person-outline", lib: Ionicons },
+            ]
+            : [
+                { route: "/views/client/Home", icon: "home", lib: Ionicons },
+                { route: "/views/client/SearchScreen", icon: "bus-multiple", lib: MaterialCommunityIcons },
+                { route: "/messages", icon: "comments", lib: FontAwesome },
+                { route: "/profile", icon: "person-outline", lib: Ionicons },
+            ];
+    }, [isAgent]);
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: isAgent ? "#79c595" : "#3C85FF" }]}>
             {pages.map((page) => {
                 const isActive = page.route === pathname;
                 const scaleValue = useRef(new Animated.Value(isActive ? 1.2 : 1)).current;
@@ -46,13 +61,12 @@ const Navbar = () => {
 const styles = StyleSheet.create({
     container: {
         position: "absolute",
-        bottom: 20, // Légèrement détaché du bas
+        bottom: 20,
         left: 20,
         right: 20,
-        height: 70, // Augmente la hauteur de la navbar
+        height: 70,
         padding: 15,
         flexDirection: "row",
-        backgroundColor: "#3C85FF",
         paddingVertical: 12,
         borderRadius: 50,
         justifyContent: "space-around",

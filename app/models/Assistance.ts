@@ -4,6 +4,7 @@ export interface Assistance {
     pmrName: string;
     pmrAvatarUrl: string;
     disabilityType: string;
+    typeTransport: string;
     departure: string;
     destination: string;
     time: string;

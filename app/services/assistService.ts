@@ -3,7 +3,7 @@ import { getFirebaseToken, db } from "./firebaseConfig";
 import { Assistance } from "../models/Assistance";
 import { doc, getDoc } from "firebase/firestore";
 
-export const BASE_API_URL = "http://192.168.1.190:7595/api";
+export const BASE_API_URL = "http://192.168.1.151:7595/api";
 
 /**
  * 🔥 Envoie une demande d'assistance PMR au backend
@@ -41,59 +41,63 @@ export const fetchAllAssistances = async (): Promise<Assistance[]> => {
         const token = await getFirebaseToken();
         if (!token) throw new Error("Impossible de récupérer le token Firebase.");
 
-        const response = await fetch(`${BASE_API_URL}/Trajet/all-trajets`, {
+        const response = await fetch(`${BASE_API_URL}/Reservation/all-reservations`, {
             headers: { Authorization: `Bearer ${token}` },
         });
+        console.log(`
+            curl --location '${BASE_API_URL}/Reservation/all-reservations' \\
+            --header 'Content-Type: application/json' \\
+            --header 'Authorization: Bearer ${token}' \\'
+        `);
 
         console.log("🔍 Réponse brute API :", response);
 
-        if (!response.ok) throw new Error("Erreur de récupération des trajets.");
-        const trajets = await response.json();
-        console.log("🚀 Trajets reçus :", trajets);
+        if (!response.ok) throw new Error("Erreur de récupération des réservations.");
+        const reservations = await response.json();
+        console.log("🚀 Réservations reçues :", reservations);
 
         // ✅ Fonction pour éviter les erreurs d'accès aux clés undefined
         const safeGet = (obj: any, key: string, defaultValue: string = "Inconnu") => {
-            return obj && obj[key] ? obj[key] : defaultValue;
+            return obj && obj[key] !== undefined ? obj[key] : defaultValue;
         };
 
         const assistanceData = await Promise.all(
-            trajets.map(async (trajet: any) => {
-                console.log("🚀 Trajet en cours de traitement :", trajet);
+            reservations.map(async (reservation: any) => {
+                console.log("🚀 Réservation en cours de traitement :", reservation);
 
-                // ✅ Vérification si `firebaseUid` existe
-                if (!trajet.firebaseUid) {
-                    console.warn(`⚠️ Trajet sans firebaseUid, ignoré :`, trajet);
+                // ✅ Vérification de `Nom` et `Prenom`
+                if (!reservation.nom || !reservation.prenom) {
+                    console.warn(`⚠️ Réservation sans nom/prénom, ignorée :`, reservation);
                     return null;
                 }
 
-                if (!trajet.dateHeureDepart) {
-                    console.warn("⚠️ Attention : `dateHeureDepart` manquant pour ce trajet :", trajet);
-                }
-
                 try {
-                    const userRef = doc(db, "users", trajet.firebaseUid);
-                    const userSnap = await getDoc(userRef);
-
-                    if (userSnap.exists()) {
-                        const userData = userSnap.data();
-                        return {
-                            id: safeGet(trajet, "id"),
-                            numeroMMT: safeGet(trajet, "numeroMMT"),
-                            firebaseUid: safeGet(trajet, "firebaseUid"),
-                            pmrName: `${safeGet(userData, "firstName")} ${safeGet(userData, "lastName")}`,
-                            pmrAvatarUrl: safeGet(userData, "avatarUrl", "https://via.placeholder.com/60"),
-                            disabilityType: safeGet(userData, "disabilityType", "Non spécifié"),
-                            departure: safeGet(trajet, "lieuDepart"),
-                            destination: safeGet(trajet, "lieuArrivee"),
-                            time: safeGet(trajet, "dateHeureDepart"),
-                            status: "en attente" // Ajout par défaut
-                        };
-                    } else {
-                        console.warn(`⚠️ Aucune donnée pour l'utilisateur ${trajet.firebaseUid}`);
-                        return null;
-                    }
+                    return {
+                        id: safeGet(reservation, "id"),
+                        numeroMMT: safeGet(reservation, "numeroMMT"),
+                        pmrName: `${safeGet(reservation, "nom")} ${safeGet(reservation, "prenom")}`,
+                        departure: safeGet(reservation, "lieuDepart"),
+                        destination: safeGet(reservation, "lieuArrivee"), // 🛠 Correction ici
+                        typeTransport: safeGet(reservation, "typeTransport"), // 🛠 Correction ici
+                        time: safeGet(reservation, "dateHeureDepart"),
+                        arrivalTime: safeGet(reservation, "dateHeureArrivee"),
+                        duration: safeGet(reservation, "dureeTotaleEnSecondes"), // 🛠 Correction ici
+                        distance: safeGet(reservation, "distanceTotale"), // 🛠 Correction ici
+                        assistancePMR: safeGet(reservation, "assistancePMR"),
+                        handicapType: safeGet(reservation, "typeHandicap"),
+                        price: safeGet(reservation, "prix"), // 🛠 Correction ici
+                        sections: reservation.sections?.map((section: any) => ({
+                            modeTransport: safeGet(section, "modeTransport"),
+                            depart: safeGet(section, "depart"),
+                            arrivee: safeGet(section, "arrivee"),
+                            price: safeGet(section, "prix"),
+                            departureTime: safeGet(section, "dateHeureDepart"),
+                            arrivalTime: safeGet(section, "dateHeureArrivee"),
+                        })) || [],
+                        status: "en attente", // Ajout d'un statut par défaut
+                    };
                 } catch (error) {
-                    console.error(`❌ Erreur lors de la récupération des données utilisateur Firebase :`, error);
+                    console.error(`❌ Erreur lors du traitement de la réservation :`, error);
                     return null;
                 }
             })

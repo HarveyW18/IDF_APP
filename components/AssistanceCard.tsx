@@ -1,65 +1,111 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { View, Text, StyleSheet, Dimensions, Image } from "react-native";
+import { FontAwesome6 } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
 interface AssistanceProps {
   assistance: {
     pmrName: string;
-    pmrAvatarUrl: string;
-    disabilityType: string;
+    pmrAvatarUrl?: string;
     departure: string;
     destination: string;
-    time?: string; // ✅ Rend `time` optionnel pour éviter les erreurs
+    typeTransport: string;
+    handicapType: string;
+    time?: string;
+    arrivalTime?: string;
+    duration?: number;
   };
   isAccepted?: boolean;
 }
 
+const truncateText = (text: string, maxLength: number) => {
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
+
+// ✅ Fonction pour formater la durée en HH:mm
+const formatDuration = (seconds?: number) => {
+  if (!seconds) return "Inconnu";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${hours}h${minutes.toString().padStart(2, "0")}`;
+};
+
 const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, isAccepted = false }) => {
-  console.log("🚀 Assistance data:", assistance);
-  if (!assistance) {
-    return <Text style={styles.details}>❌ Erreur : données assistance introuvables</Text>;
-  }
   return (
     <View style={[styles.card, isAccepted ? styles.acceptedCard : styles.pendingCard]}>
       <View style={styles.header}>
-        <MaterialIcons name="person" size={20} color="white" />
+        <FontAwesome6 name="user" size={22} color="white" />
         <Text style={styles.name}>{assistance.pmrName}</Text>
-      </View>
-      <View style={styles.detailsContainer}>
-        <Text style={styles.details}>
-          📅 Date : {typeof assistance.time === "string" && assistance.time.includes("T") ? assistance.time.split("T")[0] : "Inconnue"}
-        </Text>
-        <Text style={styles.details}>📍 Départ : {assistance.departure}</Text>
-        <Text style={styles.details}>📍 Arrivée : {assistance.destination}</Text>
+        {/* ✅ Avatar PMR à droite */}
+        {assistance.pmrAvatarUrl && (
+          <Image source={{ uri: assistance.pmrAvatarUrl }} style={styles.avatar} />
+        )}
       </View>
 
-      {/* Icone menu */}
-      <MaterialIcons name="more-horiz" size={24} color="white" style={styles.menuIcon} />
+      {/* 🔹 Départ / Arrivée alignés horizontalement */}
+      <View style={styles.routeContainer}>
+        <View style={styles.departure}>
+          <FontAwesome6 name="location-dot" size={15} color="white" />
+          <Text style={styles.details}>{truncateText(assistance.departure, 15)}</Text>
+        </View>
+        <FontAwesome6 name="arrows-left-right" size={18} color="white" />
+        <View style={styles.destination}>
+          <FontAwesome6 name="location-dot" size={15} color="white" />
+          <Text style={styles.details}>{truncateText(assistance.destination, 15)}</Text>
+        </View>
+      </View>
+
+      {/* 🔹 Détails du trajet */}
+      <View style={styles.detailsContainer}>
+        <View style={styles.detailRow}>
+          <FontAwesome6 name="train" size={16} color="white" />
+          <Text style={styles.details}>{assistance.typeTransport}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <FontAwesome6 name="clock" size={16} color="white" />
+          <Text style={styles.details}>Départ : {assistance.time}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <FontAwesome6 name="hourglass-half" size={16} color="white" />
+          <Text style={styles.details}>Durée : {formatDuration(assistance.duration)}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <FontAwesome6 name="wheelchair" size={16} color="white" />
+          <Text style={styles.details}>
+            {assistance.handicapType && assistance.handicapType !== ""
+              ? assistance.handicapType
+              : "Non spécifié"}
+          </Text>
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#2E7D32",
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 15,
     width: width * 0.9,
     alignSelf: "center",
-    position: "relative",
+    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    flexDirection: "column",
   },
   acceptedCard: {
     backgroundColor: "#1B5E20",
   },
   pendingCard: {
-    backgroundColor: "#388E3C",
+    backgroundColor: "#79c595",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
   name: {
@@ -67,18 +113,42 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
     marginLeft: 10,
+    flex: 1,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  routeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  departure: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  destination: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   detailsContainer: {
-    marginLeft: 25,
+    marginTop: 5,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
   },
   details: {
     fontSize: 14,
     color: "white",
-  },
-  menuIcon: {
-    position: "absolute",
-    right: 15,
-    bottom: 15,
+    marginLeft: 8,
   },
 });
 

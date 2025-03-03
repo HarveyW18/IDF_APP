@@ -20,6 +20,7 @@ export const getFirebaseToken = async () => {
   if (user) {
       try {
           const token = await user.getIdToken(true); 
+          console.log(token)
           return token;
       } catch (error) {
           console.error("❌ Erreur lors de la récupération du token Firebase :", error);
