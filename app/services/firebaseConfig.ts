@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBlQFS5msxKWvU1PlWnDtL_wx0dOthFPO8",
   authDomain: "helpmr-f958b.firebaseapp.com",
   projectId: "helpmr-f958b",
-  storageBucket: "helpmr-f958b.appspot.com", // Correction ici
+  storageBucket: "helpmr-f958b.appspot.com", 
   messagingSenderId: "938790536496",
   appId: "1:938790536496:web:41f1493e8bbf3453fc74f5",
   measurementId: "G-8N5EQCC3H8"
@@ -19,7 +19,7 @@ export const getFirebaseToken = async () => {
 
   if (user) {
       try {
-          const token = await user.getIdToken(true); // 🔥 Récupérer le token
+          const token = await user.getIdToken(true); 
           console.log("🔥 Token Firebase :", token);
           return token;
       } catch (error) {

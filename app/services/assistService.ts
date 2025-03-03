@@ -1,4 +1,4 @@
-const BASE_API_URL = "https://localhost:7247/api/Reservation/demande-assistance";
+const BASE_API_URL = "http://192.168.8.4:7595/api/Reservation";
 
 /**
  * 🔥 Envoie une demande d'assistance PMR au backend
@@ -12,8 +12,8 @@ export const creerReservationAssistance = async (token: string, reservationData:
                 "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(reservationData)
-        });
-
+        });        
+        console.log("🌍 URL API :", `${BASE_API_URL}/demande-assistance`);
         const data = await response.json();
 
         if (!response.ok) {

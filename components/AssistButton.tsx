@@ -1,19 +1,23 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from "react-native";
 import useAssistViewModel from "../app/viewmodels/assistViewModel";
+import { useAuthViewModel } from "../app/viewmodels/authViewModel"; // 🔥 Import Vue Auth
 
 interface AssistButtonProps {
     token: string;
     user: any;
     trajet: any;
+    depart: string;
+    arrivee: string;
 }
 
-const AssistButton: React.FC<AssistButtonProps> = ({ token, user, trajet }) => {
+const AssistButton: React.FC<AssistButtonProps> = ({ trajet, depart, arrivee }) => {
     const { demanderAssistance, loading, success, error } = useAssistViewModel();
+    const { user, token } = useAuthViewModel(); // 🔥 Récupération de l'utilisateur et du token
 
     const handlePress = () => {
-        if (!loading) {
-            demanderAssistance(token, user, trajet); // ✅ Ne passe que 3 arguments
+        if (!loading && user && token) {
+            demanderAssistance(token, user, trajet, depart, arrivee);
         }
     };
 
@@ -21,7 +25,7 @@ const AssistButton: React.FC<AssistButtonProps> = ({ token, user, trajet }) => {
         <TouchableOpacity 
             style={[styles.button, success ? styles.success : error ? styles.error : null]} 
             onPress={handlePress} 
-            disabled={loading}
+            disabled={loading || !user || !token} // Désactiver si pas d'utilisateur ou pas de token
         >
             {loading ? (
                 <ActivityIndicator color="#fff" />
@@ -30,7 +34,7 @@ const AssistButton: React.FC<AssistButtonProps> = ({ token, user, trajet }) => {
             ) : error ? (
                 <Text style={styles.text}>❌ Erreur, réessayer</Text>
             ) : (
-                <Text style={styles.text}>🦽 Demander Assistance</Text>
+                <Text style={styles.text}>Demander Assistance</Text>
             )}
         </TouchableOpacity>
     );

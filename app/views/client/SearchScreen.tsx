@@ -33,7 +33,6 @@ const SearchScreen = () => {
             const result = await obtenirItineraires(depart, arrivee);
             console.log("🎯 Résultat des itinéraires :", result);
             if (result && result.length > 0) {
-                console.log("✅ [DEBUG] Trajets trouvés :", JSON.stringify(result, null, 2));
                 setTrajets(result); // On stocke toute la structure et pas juste `sections`
             } else {
                 console.warn("❌ Aucun itinéraire trouvé.");
@@ -86,7 +85,13 @@ const SearchScreen = () => {
                                 : <FlatList
                                     data={trajets} // ✅ On affiche les 7 trajets trouvés
                                     keyExtractor={(item, index) => index.toString()}
-                                    renderItem={({ item }) => <TrajetCard trajet={item} />}
+                                    renderItem={({ item }) => <TrajetCard 
+                                    trajet={item} 
+                                    depart={depart} 
+                                    arrivee={arrivee} 
+                                    token={"TON_TOKEN_ICI"} // 🔥 Remplace par le vrai token
+                                    user={{ uid: "USER_ID", nom: "Nom", prenom: "Prénom" }} // 🔥 Remplace par les vraies infos utilisateur
+                                />}
                                     contentContainerStyle={{ paddingBottom: 90 }} // 📌 Espace pour la navbar
                                 />
                 )}

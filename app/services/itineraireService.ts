@@ -15,9 +15,7 @@ export const obtenirCoordonnees = async (adresse: string): Promise<string | null
             console.warn(`⚠️ Aucune coordonnée trouvée pour : ${adresse}`);
             return null;
         }
-
         const { lat, lng } = data.results[0].geometry.location;
-        console.log(`✅ Adresse trouvée : ${data.results[0].formatted_address} (${lat},${lng})`);
         return `${lat},${lng}`;
     } catch (error) {
         console.error("❌ Erreur lors du géocodage :", error);
@@ -38,8 +36,6 @@ export const obtenirItinerairesTransit = async (depart: string, arrivee: string)
 
     try {
         const url = `${BASE_DIRECTIONS_URL}?origin=${coordsDepart}&destination=${coordsArrivee}&mode=transit&alternatives=true&key=${GOOGLE_API_KEY}`;
-        console.log("🚀 URL API Google Maps Directions :", url);
-
         const response = await fetch(url);
         const data = await response.json();
 
@@ -96,7 +92,6 @@ export const obtenirItinerairesTransit = async (depart: string, arrivee: string)
  */
 export const obtenirItineraires = async (depart: string, arrivee: string) => {
     try {
-        console.log(`🔍 Recherche d'itinéraire pour : ${depart} ➡️ ${arrivee}`);
         return await obtenirItinerairesTransit(depart, arrivee);
     } catch (error) {
         console.error("🚨 Erreur lors de l'obtention des itinéraires :", error);

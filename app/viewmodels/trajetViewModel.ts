@@ -29,18 +29,13 @@ const useTrajetViewModel = () => {
             const data = await obtenirItineraires(depart, arrivee);
 
             if (data && data.length > 0) {
-                console.log("✅ [useTrajetViewModel] Itinéraires trouvés :", JSON.stringify(data, null, 2));
-
                 const trajetsComplets: Trajet[] = data.map((route: Trajet) => {
-                    console.log("🔍 [DEBUG] Sections du trajet :", route.sections);
                     return {
                         summary: route.summary || { duration: 0 },
                         sections: route.sections || [],
                     };
                 });
                 
-                console.log("✅ [useTrajetViewModel] Trajets complets :", trajetsComplets);              
-                console.log("🔍 [DEBUG] Trajets avant setTrajets :", JSON.stringify(trajetsComplets, null, 2));
                 setTrajets(trajetsComplets);
             } else {
                 console.warn("❌ [useTrajetViewModel] Aucun itinéraire trouvé.");

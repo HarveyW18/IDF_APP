@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AssistButton from "./AssistButton";
 
 interface Section {
     id: string;
@@ -14,11 +15,14 @@ interface Section {
 interface TrajetProps {
     depart: string;
     arrivee: string;
+    token: string;
+    user: any;
     trajet: {
         summary?: { duration?: number };
         sections?: Section[];
     };
 }
+
 
 const getTransportIcon = (mode?: string, category?: string, name?: string) => {
     if (!mode) return "route";
@@ -26,7 +30,7 @@ const getTransportIcon = (mode?: string, category?: string, name?: string) => {
     switch (mode.toLowerCase()) {
         case "bus": return "bus";
         case "subway":
-        case "metro": return "train-subway"; 
+        case "metro": return "train-subway";
         case "tram": return "train-tram";
 
         case "heavy_rail":
@@ -50,7 +54,7 @@ const getTransportIcon = (mode?: string, category?: string, name?: string) => {
 
 
 
-const TrajetCard: React.FC<TrajetProps> = ({ trajet, depart, arrivee }) => {
+const TrajetCard: React.FC<TrajetProps> = ({ token, user, trajet, depart, arrivee }) => {
     if (!trajet || !Array.isArray(trajet.sections) || trajet.sections.length === 0) {
         return <Text>❌ Aucune section trouvée</Text>;
     }
@@ -94,10 +98,10 @@ const TrajetCard: React.FC<TrajetProps> = ({ trajet, depart, arrivee }) => {
         }
     }
 
-    let arrivalPlace = arrivee;
+    let arrivalPlace = sections.findLast(sec => sec.type === "transit" && sec.arrival.place.name)?.arrival.place.name ?? arrivee;
     for (let i = sections.length - 1; i >= 0; i--) {
         if (sections[i].type === "transit" && sections[i].arrival.place.name) {
-            arrivalPlace = sections[i].arrival.place.name;
+            arrivalPlace = sections[i].arrival.place.name ?? "Lieu inconnu";
             break;
         }
     }
@@ -130,7 +134,7 @@ const TrajetCard: React.FC<TrajetProps> = ({ trajet, depart, arrivee }) => {
                         </View>
                     ))}
             </View>
-
+            <AssistButton token={token} user={user} trajet={trajet} depart={depart} arrivee={arrivee} />
         </View>
     );
 };

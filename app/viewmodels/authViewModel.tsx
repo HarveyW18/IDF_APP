@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, onAuthStateChanged, signOut} from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from "../services/firebaseConfig";
 import { getDoc, setDoc, doc } from "firebase/firestore";
 
@@ -8,6 +8,7 @@ export const useAuthViewModel = () => {
 
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   // État pour la sélection entre "Connexion" et "Inscription"
   const [isConnexionSelected, setIsConnexionSelected] = useState(true);
@@ -48,11 +49,11 @@ export const useAuthViewModel = () => {
   // Observer l'état de connexion Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        setUser(firebaseUser);
-        setLoading(false);
+      setUser(firebaseUser);
+      setLoading(false);
     });
     return () => unsubscribe();
-}, []);
+  }, []);
 
 
   // Gestionnaire pour basculer entre "Connexion" et "Inscription"
@@ -90,12 +91,12 @@ export const useAuthViewModel = () => {
 
     if (field === "email") {
       value = value.toLowerCase(); // 🔥 Convertir en minuscule
-    }  
+    }
 
     setErrors((prev) => ({
       ...prev,
       [field]: errorMsg || undefined, // Stocke l'erreur seulement si elle existe
-    }));  
+    }));
 
     setInputs((prev) => ({
       ...prev,
@@ -103,98 +104,163 @@ export const useAuthViewModel = () => {
     }));
   };
 
+  // 🔥 Récupère l'utilisateur depuis Firebase et Firestore
+  const fetchUserData = async (firebaseUser: any) => {
+    if (!firebaseUser) {
+      setUser(null);
+      setToken(null);
+      return;
+    }
+
+    try {
+      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+      const token = await firebaseUser.getIdToken(true);
+
+      if (userDoc.exists()) {
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          token,
+          ...userDoc.data(),
+        });
+        setToken(token);
+      } else {
+        console.warn("⚠️ Utilisateur non trouvé dans Firestore.");
+        setUser(null);
+        setToken(null);
+      }
+    } catch (error) {
+      console.error("❌ Erreur récupération des données Firestore:", error);
+    }
+  };
+
+  // 🛠️ Observer l'état de connexion Firebase
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
+      await fetchUserData(firebaseUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
 
 
   // Fonction de connexion avec Firebase
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
+
     try {
-      const email = inputs.email.toLowerCase();  // 🔥 Convertir ici aussi
+      const email = inputs.email.trim().toLowerCase(); // 🔥 Nettoyage email
       const userCredential = await signInWithEmailAndPassword(auth, email, inputs.password);
       const user = userCredential.user;
 
-      // 🔥 Récupérer le token Firebase après connexion
+      if (!user) {
+        throw new Error("Utilisateur introuvable.");
+      }
+
+      // 🔥 Récupération du token Firebase
       const token = await user.getIdToken(true);
       console.log("🔥 Token après connexion :", token);
-  
+
+      // 🔥 Récupération des infos utilisateur depuis Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        setRole(userData.role);
-      } else {
-        setError("Utilisateur introuvable.");
+      if (!userDoc.exists()) {
+        throw new Error("Utilisateur introuvable dans la base.");
       }
-  
+
+      const userData = userDoc.data();
+      setUser({
+        uid: user.uid,
+        email: user.email,
+        token,
+        ...userData,
+      });
+
+      setRole(userData.role || "user"); // 🔥 Récupération du rôle
       setLoading(false);
       router.replace("/views/client/Home");
       return user;
     } catch (err: any) {
-      setError(err.message || "Erreur de connexion.");
-      setLoading(false);
-      throw err;
+      console.error("❌ Erreur de connexion :", err);
+      setError(err.message || "Une erreur est survenue lors de la connexion.");
     }
-  };  
+
+    setLoading(false);
+  };
+
 
 
   // Fonction d'inscription avec Firebase
   const handleRegister = async () => {
     setLoading(true);
     setError(null);
-  
+
     try {
-      const email = inputs.email.toLowerCase();
-  
-      // ✅ Vérifier si l'email est déjà utilisé AVANT de créer le compte
+      const email = inputs.email.trim().toLowerCase(); // 🔥 Normalisation email
+
+      // ✅ Vérification si l'email est déjà utilisé
       const signInMethods = await fetchSignInMethodsForEmail(auth, email);
       if (signInMethods.length > 0) {
-        setError("Cet email est déjà utilisé.");
-        setLoading(false);
-        return;
+        throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
       }
-  
+
+      // ✅ Vérification du mot de passe
       if (inputs.password !== inputs.confirmpassword) {
         setErrors((prev) => ({ ...prev, confirmpassword: "Les mots de passe ne correspondent pas." }));
-        setLoading(false);
-        return;
+        throw new Error("Les mots de passe ne correspondent pas.");
       }
-  
+
+      // ✅ Création de l'utilisateur Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, inputs.password);
       const user = userCredential.user;
-  
-      await setDoc(doc(db, "users", user.uid), {
+
+      if (!user) {
+        throw new Error("Impossible de créer l'utilisateur.");
+      }
+
+      // 🔥 Stockage des infos utilisateur dans Firestore
+      const userData = {
         uid: user.uid,
-        email: email,
-        firstName: inputs.firstName,
-        lastName: inputs.lastName,
-        address: inputs.address,
-        phone: inputs.phone,
+        email,
+        firstName: inputs.firstName.trim(),
+        lastName: inputs.lastName.trim(),
+        address: inputs.address.trim(),
+        phone: inputs.phone.trim(),
         role: "user",
         createdAt: new Date(),
-      });
-  
+      };
+
+      await setDoc(doc(db, "users", user.uid), userData);
+
+      setUser({ ...userData, token: await user.getIdToken(true) }); // 🔥 Ajout du token
       setRole("user");
+
       setLoading(false);
       router.replace("/views/client/Home");
       return user;
     } catch (err: any) {
-      const errorMessage = translateFirebaseError(err.code);
-      setError(errorMessage);
-      setLoading(false);
-      throw err;
+      console.error("❌ Erreur d'inscription :", err);
+      setError(err.message || "Une erreur est survenue lors de l'inscription.");
     }
+
+    setLoading(false);
   };
+
 
   // Fonction de déconnexion
   const handleLogout = async () => {
     try {
       await signOut(auth);
       setUser(null);
+      setToken(null);
     } catch (err) {
-      console.error("Erreur lors de la déconnexion", err);
+      console.error("❌ Erreur lors de la déconnexion :", err);
     }
   };
-  
+
 
   const translateFirebaseError = (code: string): string => {
     switch (code) {
@@ -214,7 +280,7 @@ export const useAuthViewModel = () => {
         return "Une erreur s'est produite. Vérifiez votre connexion internet.";
     }
   };
-  
+
 
 
   const validateInput = (field: keyof typeof inputs, value: string): string | null => {
@@ -225,21 +291,21 @@ export const useAuthViewModel = () => {
         }
         if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
           return "Email invalide.";
-        }        
+        }
         break;
 
-        case "password":
-          if (value.length < 6 || value.length > 20) {
-            return "Le mot de passe doit contenir entre 6 et 20 caractères.";
-          }
-          if (/\s/.test(value)) {
-            return "Le mot de passe ne doit pas contenir d'espaces.";
-          }
-          if (!/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
-            return "Le mot de passe doit contenir une majuscule, un chiffre et un caractère spécial.";
-          }
-          break;
-        
+      case "password":
+        if (value.length < 6 || value.length > 20) {
+          return "Le mot de passe doit contenir entre 6 et 20 caractères.";
+        }
+        if (/\s/.test(value)) {
+          return "Le mot de passe ne doit pas contenir d'espaces.";
+        }
+        if (!/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+          return "Le mot de passe doit contenir une majuscule, un chiffre et un caractère spécial.";
+        }
+        break;
+
 
       case "confirmpassword":
         if (value !== inputs.password) {
@@ -286,6 +352,7 @@ export const useAuthViewModel = () => {
     handleRegister,
     handleLogout,
     user,
+    token,
     loading,
     error,
     role,
