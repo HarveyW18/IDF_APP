@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from "react-native";
-import useAssistViewModel from "../app/viewmodels/assistViewModel";
+import { useAssistViewModel } from "../app/viewmodels/assistViewModel";
 import { useAuthViewModel } from "../app/viewmodels/authViewModel"; // 🔥 Import Vue Auth
 
 interface AssistButtonProps {
@@ -13,19 +13,20 @@ interface AssistButtonProps {
 
 const AssistButton: React.FC<AssistButtonProps> = ({ trajet, depart, arrivee }) => {
     const { demanderAssistance, loading, success, error } = useAssistViewModel();
-    const { user, token } = useAuthViewModel(); // 🔥 Récupération de l'utilisateur et du token
+    const { user, token } = useAuthViewModel(); 
 
     const handlePress = () => {
         if (!loading && user && token) {
             demanderAssistance(token, user, trajet, depart, arrivee);
         }
     };
+    
 
     return (
         <TouchableOpacity 
             style={[styles.button, success ? styles.success : error ? styles.error : null]} 
             onPress={handlePress} 
-            disabled={loading || !user || !token} // Désactiver si pas d'utilisateur ou pas de token
+            disabled={loading || !user || !token} 
         >
             {loading ? (
                 <ActivityIndicator color="#fff" />

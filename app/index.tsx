@@ -22,16 +22,25 @@ export default function Home() {
 
       {!user ? (
         <>
+          {/* Connexion pour les utilisateurs */}
           <Pressable
             onPress={() => router.push("/authuser")}
             style={{ backgroundColor: "#003366", padding: 10, borderRadius: 5, marginBottom: 10 }}
           >
-            <Text style={{ color: "white", fontSize: 16 }}>Connexion</Text>
+            <Text style={{ color: "white", fontSize: 16 }}>Connexion Utilisateur</Text>
+          </Pressable>
+
+          {/* Connexion pour les agents */}
+          <Pressable
+            onPress={() => router.push("/authagent")}
+            style={{ backgroundColor: "#FF5733", padding: 10, borderRadius: 5, marginBottom: 10 }}
+          >
+            <Text style={{ color: "white", fontSize: 16 }}>Connexion Agent</Text>
           </Pressable>
         </>
       ) : (
         <>
-        <Pressable
+          <Pressable
             onPress={() => router.push("/views/client/Home")}
             style={{ backgroundColor: "#28a745", padding: 10, borderRadius: 5, marginBottom: 10 }}
           >

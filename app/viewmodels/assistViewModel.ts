@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { creerReservationAssistance } from "../services/assistService";
+import { useState, useEffect } from "react";
+import { creerReservationAssistance, fetchAllAssistances } from "../services/assistService";
+import { BASE_API_URL } from "../services/assistService";
+import { Assistance } from "../models/Assistance";
+
 
 interface Section {
     departure: { place: { name?: string } };
@@ -100,8 +103,8 @@ const useAssistViewModel = () => {
         // 🔹 Construire l'objet JSON à envoyer
         const reservationData = {
             firebaseUid: user?.uid || "UID_INCONNU",
-            nom: user.nom || "Utilisateur inconnu",
-            prenom: user.prenom || "Utilisateur inconnu",
+            nom: user.firstName || "Utilisateur inconnu",
+            prenom: user.lastName || "Utilisateur inconnu",
             lieuDepart: depart,
             lieuArrivee: arrivee,
             typeTransport,
@@ -116,10 +119,12 @@ const useAssistViewModel = () => {
             distanceTotale: 0,
             sections: [...sectionsClone], // ✅ Copie indépendante des sections
         };
+        console.log("🔍 JSON avant envoi :", JSON.stringify(reservationData, null, 2));
+        
 
         // ✅ Ajouter un log de la requête `curl` pour debug
         console.log(`
-            curl --location 'http://192.168.8.4:7595/api/Reservation/demande-assistance' \\
+            curl --location '${BASE_API_URL}/Reservation/demande-assistance' \\
             --header 'Content-Type: application/json' \\
             --header 'Authorization: Bearer ${token}' \\
             --data '${JSON.stringify(reservationData)}'
@@ -145,4 +150,43 @@ const useAssistViewModel = () => {
     return { demanderAssistance, loading, error, success };
 };
 
-export default useAssistViewModel;
+const useAssistanceViewModel = () => {
+    const [assistances, setAssistances] = useState<Assistance[]>([]);
+    const [acceptedMissions, setAcceptedMissions] = useState<Assistance[]>([]);
+    const [pendingRequests, setPendingRequests] = useState<Assistance[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+  
+    const fetchAssistances = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchAllAssistances();
+        setAssistances(data);
+  
+        // Séparation des missions acceptées et en attente
+        setAcceptedMissions(data.filter((item) => item.status === "acceptée"));
+        setPendingRequests(data.filter((item) => item.status === "en attente"));
+        
+        setError(null);
+      } catch (err) {
+        setError("Erreur lors du chargement des assistances.");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    useEffect(() => {
+      fetchAssistances();
+  
+      const interval = setInterval(() => {
+        fetchAssistances();
+      }, 30000);
+  
+      return () => clearInterval(interval);
+    }, []);
+  
+    return { assistances, acceptedMissions, pendingRequests, loading, error };
+  };
+
+  export { useAssistViewModel, useAssistanceViewModel };
+

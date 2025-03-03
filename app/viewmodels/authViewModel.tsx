@@ -1,24 +1,33 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, onAuthStateChanged, signOut } from 'firebase/auth';
+import { useEffect, useState } from "react";
+import { useRouter, useSegments } from "expo-router";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  onAuthStateChanged,
+  signOut
+} from "firebase/auth";
 import { auth, db } from "../services/firebaseConfig";
 import { getDoc, setDoc, doc } from "firebase/firestore";
 
 export const useAuthViewModel = () => {
-
   const router = useRouter();
+  const segments = useSegments();
+
+  // ✅ Vérifier que `segments` contient bien des valeurs
+  const [role, setRole] = useState<string | null>(null);
+
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  // État pour la sélection entre "Connexion" et "Inscription"
+  // État pour connexion/inscription
   const [isConnexionSelected, setIsConnexionSelected] = useState(true);
-
-  // État pour savoir si l'utilisateur est à l'étape suivante de l'inscription
   const [isNextStep, setIsNextStep] = useState(false);
+  const [isNextStepDisabled, setIsNextStepDisabled] = useState(true); // ✅ Défini avec useState
 
   const [errors, setErrors] = useState<{ [key in keyof typeof inputs]?: string }>({});
 
-  // État pour les champs du formulaire
+  // Champs du formulaire
   const [inputs, setInputs] = useState({
     email: '',
     password: '',
@@ -32,96 +41,118 @@ export const useAuthViewModel = () => {
   const isLoginDisabled = !inputs.email || !inputs.password || !!errors.email || !!errors.password;
   const isRegisterDisabled = Object.values(inputs).some(value => !value) || Object.values(errors).some(error => error);
 
-
-  const isNextStepDisabled =
-    !inputs.firstName.trim() ||
-    !inputs.lastName.trim() ||
-    !inputs.address.trim() ||
-    !inputs.phone.trim();
-
-  // État pour le rôle de l'utilisateur
-  const [role, setRole] = useState<string | null>(null);
-
-  // État pour gérer le chargement et les erreurs
+  // Gestion du chargement et des erreurs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Observer l'état de connexion Firebase
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        await fetchUserData(firebaseUser);
+      } else {
+        setUser(null);
+        setToken(null);
+      }
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const currentPath = segments.join("/");
 
-  // Gestionnaire pour basculer entre "Connexion" et "Inscription"
-  const toggleConnexion = (isSelected: boolean) => {
-    setIsConnexionSelected(isSelected);
-    setIsNextStep(false); // Réinitialise l’étape si on bascule vers "Connexion"
-  };
-
-  // Gestionnaire pour passer à l'étape suivante
-  const toggleNextStep = () => {
-    let newErrors: { [key in keyof typeof inputs]?: string } = {};
-    let hasError = false;
-
-    // Vérifier si les champs de la première étape sont remplis
-    ["firstName", "lastName", "address", "phone"].forEach((field) => {
-      if (!inputs[field as keyof typeof inputs].trim()) {
-        newErrors[field as keyof typeof inputs] = "Ce champ est obligatoire.";
-        hasError = true;
-      }
-    });
-
-    if (hasError) {
-      setErrors(newErrors);
-      return; // 🔹 Empêche l'utilisateur de passer à l'étape suivante
+    if (currentPath.includes("authagent")) {
+      setRole("agent");
+    } else {
+      setRole("user");
     }
-
-    setErrors({}); // 🔥 Efface les erreurs s'il n'y en a plus
-    setIsNextStep(true);
-  };
+  }, [segments]);
 
 
-  // Mise à jour des champs du formulaire
   const updateInput = (field: keyof typeof inputs, value: string) => {
-    const errorMsg = validateInput(field, value);
+    console.log(`📝 Modification du champ: ${field} -> ${value}`);
 
-    if (field === "email") {
-      value = value.toLowerCase(); // 🔥 Convertir en minuscule
-    }
+    setInputs((prev) => {
+      const updatedInputs = { ...prev, [field]: value };
 
-    setErrors((prev) => ({
-      ...prev,
-      [field]: errorMsg || undefined, // Stocke l'erreur seulement si elle existe
-    }));
+      const nextStepDisabled =
+        !updatedInputs.firstName.trim().length ||
+        !updatedInputs.lastName.trim().length ||
+        !updatedInputs.address.trim().length ||
+        !updatedInputs.phone.trim().length;
 
-    setInputs((prev) => ({
-      ...prev,
-      [field]: value, // 🔥 Toujours mettre à jour l'input même si une erreur existe
-    }));
+      console.log(`🚦 nextStepDisabled: ${nextStepDisabled}`);
+      setIsNextStepDisabled(nextStepDisabled);
+
+      return updatedInputs;
+    });
   };
 
-  // 🔥 Récupère l'utilisateur depuis Firebase et Firestore
-  const fetchUserData = async (firebaseUser: any) => {
-    if (!firebaseUser) {
-      setUser(null);
-      setToken(null);
-      return;
+  const validatePassword = (password: string) => {
+    const minLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[\W_]/.test(password); // Vérifie les caractères spéciaux
+
+    return { minLength, hasUppercase, hasSpecialChar };
+  };
+
+  const validateInputs = () => {
+    let newErrors: { [key in keyof typeof inputs]?: string } = {};
+
+    if (!inputs.firstName.trim()) newErrors.firstName = "Le prénom est requis.";
+    if (!inputs.lastName.trim()) newErrors.lastName = "Le nom est requis.";
+    if (!inputs.address.trim()) newErrors.address = "L'adresse est requise.";
+    if (!inputs.phone.trim()) {
+      newErrors.phone = "Le numéro de téléphone est requis.";
+    } else if (!/^\d{10}$/.test(inputs.phone)) {
+      newErrors.phone = "Le numéro de téléphone doit contenir 10 chiffres.";
     }
 
+    // Validation du mot de passe
+    const passwordValidation = validatePassword(inputs.password);
+    if (!passwordValidation.minLength) newErrors.password = "Minimum 8 caractères.";
+    if (!passwordValidation.hasUppercase) newErrors.password = "1 majuscule requise.";
+    if (!passwordValidation.hasSpecialChar) newErrors.password = "1 caractère spécial requis.";
+
+    // Vérification de la confirmation du mot de passe
+    if (inputs.password !== inputs.confirmpassword) {
+      newErrors.confirmpassword = "Les mots de passe ne correspondent pas.";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const toggleNextStep = () => {
+    if (validateInputs()) {
+      setIsNextStep(true);
+    }
+  };
+
+  // Récupère l'utilisateur depuis Firestore et vérifie son rôle
+  const fetchUserData = async (firebaseUser: any) => {
     try {
       const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
       const token = await firebaseUser.getIdToken(true);
 
       if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log("🔥 Données utilisateur récupérées :", userData);
+        console.log("👤 Rôle Firestore :", userData.role);
+
+        // ✅ Met à jour le rôle dynamiquement
+        setRole(userData.role);
+
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
           token,
-          ...userDoc.data(),
+          ...userData,
         });
         setToken(token);
       } else {
@@ -131,29 +162,19 @@ export const useAuthViewModel = () => {
       }
     } catch (error) {
       console.error("❌ Erreur récupération des données Firestore:", error);
+      setError("Erreur lors de la récupération des données.");
     }
   };
 
-  // 🛠️ Observer l'état de connexion Firebase
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
-      await fetchUserData(firebaseUser);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
 
-
-  // Fonction de connexion avec Firebase
+  // Connexion Firebase
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const email = inputs.email.trim().toLowerCase(); // 🔥 Nettoyage email
+      const email = inputs.email.trim().toLowerCase();
       const userCredential = await signInWithEmailAndPassword(auth, email, inputs.password);
       const user = userCredential.user;
 
@@ -161,59 +182,42 @@ export const useAuthViewModel = () => {
         throw new Error("Utilisateur introuvable.");
       }
 
-      // 🔥 Récupération du token Firebase
-      const token = await user.getIdToken(true);
-      console.log("🔥 Token après connexion :", token);
-
-      // 🔥 Récupération des infos utilisateur depuis Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (!userDoc.exists()) {
-        throw new Error("Utilisateur introuvable dans la base.");
-      }
-
-      const userData = userDoc.data();
-      setUser({
-        uid: user.uid,
-        email: user.email,
-        token,
-        ...userData,
-      });
-
-      setRole(userData.role || "user"); // 🔥 Récupération du rôle
+      await fetchUserData(user);
       setLoading(false);
-      router.replace("/views/client/Home");
-      return user;
+
+      // 🔥 Attendre que le rôle soit mis à jour avant de rediriger
+      if (role) {
+        router.replace(role === "user" ? "/views/client/Home" : "/views/agent/Home");
+      }
     } catch (err: any) {
       console.error("❌ Erreur de connexion :", err);
       setError(err.message || "Une erreur est survenue lors de la connexion.");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
 
-
-  // Fonction d'inscription avec Firebase
+  // Inscription Firebase
   const handleRegister = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const email = inputs.email.trim().toLowerCase(); // 🔥 Normalisation email
+      const email = inputs.email.trim().toLowerCase();
 
-      // ✅ Vérification si l'email est déjà utilisé
+      // Vérifier si l'email est déjà utilisé
       const signInMethods = await fetchSignInMethodsForEmail(auth, email);
       if (signInMethods.length > 0) {
         throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
       }
 
-      // ✅ Vérification du mot de passe
+      // Vérifier si les mots de passe correspondent
       if (inputs.password !== inputs.confirmpassword) {
         setErrors((prev) => ({ ...prev, confirmpassword: "Les mots de passe ne correspondent pas." }));
         throw new Error("Les mots de passe ne correspondent pas.");
       }
 
-      // ✅ Création de l'utilisateur Firebase
+      // Création utilisateur Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, inputs.password);
       const user = userCredential.user;
 
@@ -221,7 +225,7 @@ export const useAuthViewModel = () => {
         throw new Error("Impossible de créer l'utilisateur.");
       }
 
-      // 🔥 Stockage des infos utilisateur dans Firestore
+      // Enregistrement Firestore avec le rôle approprié
       const userData = {
         uid: user.uid,
         email,
@@ -229,28 +233,25 @@ export const useAuthViewModel = () => {
         lastName: inputs.lastName.trim(),
         address: inputs.address.trim(),
         phone: inputs.phone.trim(),
-        role: "user",
+        role,
         createdAt: new Date(),
       };
 
       await setDoc(doc(db, "users", user.uid), userData);
 
-      setUser({ ...userData, token: await user.getIdToken(true) }); // 🔥 Ajout du token
-      setRole("user");
-
+      setUser({ ...userData, token: await user.getIdToken(true) });
       setLoading(false);
-      router.replace("/views/client/Home");
-      return user;
+
+      // 🔥 Redirection après inscription
+      router.replace(role === "user" ? "/views/client/Home" : "/views/agent/Home");
     } catch (err: any) {
       console.error("❌ Erreur d'inscription :", err);
       setError(err.message || "Une erreur est survenue lors de l'inscription.");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-
-  // Fonction de déconnexion
+  // Déconnexion
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -261,93 +262,18 @@ export const useAuthViewModel = () => {
     }
   };
 
-
-  const translateFirebaseError = (code: string): string => {
-    switch (code) {
-      case "auth/email-already-in-use":
-        return "Cet email est déjà utilisé. Essayez de vous connecter.";
-      case "auth/invalid-email":
-        return "L'adresse email est invalide. Vérifiez votre saisie.";
-      case "auth/weak-password":
-        return "Mot de passe trop faible. Minimum 6 caractères.";
-      case "auth/wrong-password":
-        return "Mot de passe incorrect. Réessayez ou réinitialisez-le.";
-      case "auth/user-not-found":
-        return "Aucun compte trouvé avec cet email.";
-      case "auth/too-many-requests":
-        return "Trop de tentatives. Réessayez plus tard.";
-      default:
-        return "Une erreur s'est produite. Vérifiez votre connexion internet.";
-    }
-  };
-
-
-
-  const validateInput = (field: keyof typeof inputs, value: string): string | null => {
-    switch (field) {
-      case "email":
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          return "Email invalide.";
-        }
-        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-          return "Email invalide.";
-        }
-        break;
-
-      case "password":
-        if (value.length < 6 || value.length > 20) {
-          return "Le mot de passe doit contenir entre 6 et 20 caractères.";
-        }
-        if (/\s/.test(value)) {
-          return "Le mot de passe ne doit pas contenir d'espaces.";
-        }
-        if (!/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
-          return "Le mot de passe doit contenir une majuscule, un chiffre et un caractère spécial.";
-        }
-        break;
-
-
-      case "confirmpassword":
-        if (value !== inputs.password) {
-          return "Les mots de passe ne correspondent pas.";
-        }
-        break;
-
-      case "phone":
-        if (!/^\d{8,15}$/.test(value)) {
-          return "Le numéro doit contenir entre 8 et 15 chiffres uniquement.";
-        }
-        break;
-
-      case "firstName":
-      case "lastName":
-        if (!/^[a-zA-ZÀ-ÿ\s-]+$/.test(value)) {
-          return "Ce champ ne doit contenir que des lettres.";
-        }
-        break;
-
-      case "address":
-        if (!/^[a-zA-Z0-9À-ÿ\s,'-]+$/.test(value)) {
-          return "L'adresse contient des caractères invalides.";
-        }
-        break;
-
-      default:
-        return null;
-    }
-    return null;
-  };
-
   return {
+    role,
     isConnexionSelected,
     isNextStep,
     isNextStepDisabled,
     isLoginDisabled,
     isRegisterDisabled,
-    toggleConnexion,
-    toggleNextStep,
+    toggleConnexion: setIsConnexionSelected,
+    toggleNextStep: () => setIsNextStep(true),
     inputs,
-    updateInput,
+    updateInput: (field: keyof typeof inputs, value: string) => setInputs((prev) => ({ ...prev, [field]: value })),
+    validatePassword,
     handleLogin,
     handleRegister,
     handleLogout,
@@ -355,7 +281,6 @@ export const useAuthViewModel = () => {
     token,
     loading,
     error,
-    role,
     errors,
   };
 };

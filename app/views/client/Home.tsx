@@ -4,7 +4,7 @@ import { useAuthViewModel } from "../../viewmodels/authViewModel";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Navbar from "../../../components/Navbar";
-import MapComponent from "../../../components/MapComponent"; // 🔥 Import de la carte
+import MapComponent from "../../../components/MapComponent"; 
 
 const HomeScreen = () => {
     const { user } = useAuthViewModel();
@@ -38,7 +38,7 @@ const HomeScreen = () => {
                 <View style={styles.content}>
                     <View style={styles.header}>
                         <Text style={styles.greeting}>Bonjour,</Text>
-                        <Text style={styles.name}>{user ? user.email : "Utilisateur"}</Text>
+                        <Text style={styles.name}>{user ? user.firstName +" " + user.lastName : "Utilisateur"}</Text>
                         <Image source={require("../../../assets/avatar/avatar.png")} style={styles.avatar} />
                     </View>
 

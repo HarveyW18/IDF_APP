@@ -9,10 +9,12 @@ interface SearchBarProps {
     placeholder: string;
     onSelect: (address: string) => void;
     value: string;
-    label?: string; // Label optionnel (Départ / Arrivée)
+    label?: string;
+    inputStyle?: object; 
+    containerStyle?: object; 
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect, value, label }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect, value, label, inputStyle, containerStyle}) => {
     const [query, setQuery] = useState(value);
     const [suggestions, setSuggestions] = useState<{ place_id: string; description: string }[]>([]);
     const [focused, setFocused] = useState(false);
@@ -45,10 +47,10 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, onSelect, value, lab
 
     return (
         <View style={styles.container}>
-            <View style={[styles.searchContainer, focused && styles.searchFocused]}>
+            <View style={[styles.searchContainer, focused && styles.searchFocused, containerStyle]}>
                 {label && <Text style={styles.label}>{label}</Text>}
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputStyle]}
                     placeholder={placeholder}
                     value={query}
                     onChangeText={(text) => {
