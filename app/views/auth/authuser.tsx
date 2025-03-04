@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react"; 
 import {
   View,
   Text,
@@ -6,17 +6,22 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
   Dimensions,
+  Image
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import { useAuthViewModel } from "../../viewmodels/authViewModel";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useNavigation } from '@react-navigation/native';
+import { useRouter } from "expo-router";
+import { router } from "expo-router";
+
 
 // Obtenir les dimensions de l'écran
 const { width, height } = Dimensions.get("window");
 
 const Auth = observer(() => {
+  const router = useRouter(); // Hook pour naviguer
   const {
     isConnexionSelected,
     isNextStep,
@@ -29,6 +34,8 @@ const Auth = observer(() => {
     loading,
     error,
   } = useAuthViewModel();
+
+
 
   return (
     <>
@@ -71,6 +78,8 @@ const Auth = observer(() => {
           </TouchableOpacity>
         </View>
 
+
+
         {/* Formulaires */}
         {isConnexionSelected ? (
           <SafeAreaView style={styles.formArea}>
@@ -106,8 +115,9 @@ const Auth = observer(() => {
             </View>
             <TouchableOpacity
               style={styles.button}
-              onPress={handleLogin}
+              onPress={() => router.push({ pathname: "../views/client/Home"})}              
               disabled={loading}
+      
             >
               <Text style={styles.buttonText}>
                 {loading ? "Connexion..." : "Se connecter"}

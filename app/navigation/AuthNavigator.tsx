@@ -1,19 +1,18 @@
-// Navigation pour les pages d'authentification
-
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Auth from '../views/auth/authuser'; // Import unique de la page auth
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import Auth from "../views/auth/authuser";
+import Home from "../views/client/Home";
 
 const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => {
   return (
-    <Stack.Navigator initialRouteName="auth" screenOptions={{ headerShown: false }}>
-      {/* Route unique pour la page auth */}
-      <Stack.Screen name="auth" component={Auth} />
+    <Stack.Navigator initialRouteName="Auth" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Auth" component={Auth} />
+      <Stack.Screen name="Home" component={Home} />
+
     </Stack.Navigator>
   );
 };
 
 export default AuthNavigator;
-

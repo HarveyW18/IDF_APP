@@ -8,6 +8,10 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '../components/useColorScheme'; // Ajuster ce chemin si nécessaire
 
+export const unstable_settings = {
+  initialRouteName: "Home",
+};
+
 export {
   // Gérer les erreurs de navigation via un composant ErrorBoundary.
   ErrorBoundary,
@@ -48,8 +52,38 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+      <Stack screenOptions={{ headerShown: false }} />;
+
         {/* Route pour la page d'accueil (ou par défaut) */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
+
+        <Stack.Screen name="Home" options={{  headerShown: false, }} />
+
+        <Stack.Screen name="Itinéraires" options={{ headerShown: false, }} />
+        <Stack.Screen name="SearchScreen" options={{ headerShown: false, }} />
+        <Stack.Screen name="TrajetScreen" options={{ headerShown: false, }} />
+
+        <Stack.Screen
+          name="enregistrement"
+          options={{
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+                  name="bagages"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+
+        <Stack.Screen name="paiement" options={{ headerShown: false,}} />
+        <Stack.Screen name="qrcode" options={{ headerShown: false,}} />
+
+
+        <Stack screenOptions={{ headerShown: false }} />
+
+
 
         {/* Route pour afficher une page modale */}
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
@@ -69,7 +103,10 @@ function RootLayoutNav() {
             headerShown: false,
           }}
         />
+
+
       </Stack>
+      
     </ThemeProvider>
   );
 }
