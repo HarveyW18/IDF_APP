@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,30 +12,78 @@ import {
 import Navbar from "../../../components/Navbar";
 import AssistanceCard from "../../../components/AssistanceCard";
 import { useAuthViewModel } from "../../viewmodels/authViewModel";
-import { useAssistanceViewModel } from "../../viewmodels/assistViewModel";
-import { LinearGradient } from "expo-linear-gradient"; // ✅ Import pour l'effet de flou
+import { fetchAllAssistances } from "../../services/assistService"; // 🔥 API pour récupérer les assistances
+import { Assistance } from "../../models/Assistance"; // 🔥 Import du type Assistance
+import { LinearGradient } from "expo-linear-gradient";
 
 const { height } = Dimensions.get("window");
 
 const AgentHome = () => {
-  const { acceptedMissions, pendingRequests, loading, error } = useAssistanceViewModel();
   const { user } = useAuthViewModel();
+
+  // ✅ Correction : Typage explicite des états
+  const [assistances, setAssistances] = useState<Assistance[]>([]);
+  const [acceptedMissions, setAcceptedMissions] = useState<Assistance[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<Assistance[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   // 🔥 Animation de fondu
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // 🔄 Fonction pour récupérer les assistances
+  const fetchAssistances = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchAllAssistances();
+      
+      // ✅ Vérification que `status` correspond bien aux valeurs attendues
+      const formattedData = data.map((item) => ({
+        ...item,
+        status: item.status === "acceptée" || item.status === "en attente" ? item.status : "en attente",
+        handicapType: item.handicapType || "", // ✅ Valeur par défaut pour éviter les erreurs de typage
+      }));
+
+      setAssistances(formattedData);
+
+      // ✅ Filtrage avec les valeurs correctes
+      setAcceptedMissions(formattedData.filter((item) => item.status === "acceptée"));
+      setPendingRequests(formattedData.filter((item) => item.status === "en attente"));
+
+      setError(null);
+    } catch (err) {
+      setError("Erreur lors du chargement des assistances.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔄 Mise à jour automatique toutes les 30 secondes
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    fetchAssistances();
+    const interval = setInterval(() => {
+      fetchAssistances();
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  // 🛠️ Fonction pour mettre à jour le statut d'une assistance
+  const handleUpdateStatus = (id: number, newStatus: "acceptée" | "en attente") => {
+    setAssistances((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+    );
+
+    if (newStatus === "en attente") {
+      setAcceptedMissions((prev) => prev.filter((item) => item.id !== id));
+      setPendingRequests((prev) => [...prev, assistances.find((item) => item.id === id)!]);
+    } else if (newStatus === "acceptée") {
+      setPendingRequests((prev) => prev.filter((item) => item.id !== id));
+      setAcceptedMissions((prev) => [...prev, assistances.find((item) => item.id === id)!]);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* 📌 Carte utilisateur */}
-
       {loading ? (
         <ActivityIndicator size="large" color="#79c595" />
       ) : error ? (
@@ -46,7 +94,12 @@ const AgentHome = () => {
             <>
               <Text style={styles.sectionTitle}>Aujourd'hui :</Text>
               {acceptedMissions.map((item) => (
-                <AssistanceCard key={item.id} assistance={{ ...item, typeTransport: item.typeTransport || "Inconnu" }} isAccepted />
+                <AssistanceCard
+                  key={item.id}
+                  assistance={{ ...item, typeTransport: item.typeTransport || "Inconnu" }}
+                  isAccepted
+                  onUpdateStatus={handleUpdateStatus}
+                />
               ))}
             </>
           )}
@@ -54,8 +107,13 @@ const AgentHome = () => {
           <Text style={styles.sectionTitle}>Vos missions à venir :</Text>
           <FlatList
             data={pendingRequests}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <AssistanceCard assistance={{ ...item, typeTransport: item.typeTransport || "Inconnu" }} />}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <AssistanceCard
+                assistance={{ ...item, typeTransport: item.typeTransport || "Inconnu" }}
+                onUpdateStatus={handleUpdateStatus}
+              />
+            )}
             contentContainerStyle={styles.list}
           />
         </>
@@ -63,6 +121,7 @@ const AgentHome = () => {
 
       {/* 🌫 Dégradé pour éviter la superposition avec la navbar */}
       <LinearGradient colors={["transparent", "transparent", "transparent"]} style={styles.gradientOverlay} />
+
       {/* 📌 Carte utilisateur */}
       <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
         <View style={styles.content}>
@@ -73,6 +132,7 @@ const AgentHome = () => {
           </View>
         </View>
       </Animated.View>
+
       <Navbar />
     </View>
   );
@@ -81,7 +141,7 @@ const AgentHome = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white", // ✅ Fond blanc
+    backgroundColor: "white",
     paddingHorizontal: 20,
     paddingTop: height * 0.05,
   },
@@ -127,7 +187,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#79c595", // ✅ Couleur verte en accent
+    color: "#79c595",
     marginVertical: 10,
   },
   error: {
@@ -135,7 +195,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   list: {
-    paddingBottom: 180, // ✅ Ajusté pour éviter l'écrasement avec la navbar
+    paddingBottom: 180,
   },
   gradientOverlay: {
     position: "absolute",

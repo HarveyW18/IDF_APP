@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { creerReservationAssistance, fetchAllAssistances } from "../services/assistService";
-import { BASE_API_URL } from "../services/assistService";
+import { BASE_API_URL, accepterReservation, terminerReservation } from "../services/assistService";
 import { Assistance } from "../models/Assistance";
 
 
@@ -157,36 +157,49 @@ const useAssistanceViewModel = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
   
+    // 🔥 Charger toutes les assistances
     const fetchAssistances = async () => {
-      setLoading(true);
-      try {
-        const data = await fetchAllAssistances();
-        setAssistances(data);
-  
-        // Séparation des missions acceptées et en attente
-        setAcceptedMissions(data.filter((item) => item.status === "acceptée"));
-        setPendingRequests(data.filter((item) => item.status === "en attente"));
-        
-        setError(null);
-      } catch (err) {
-        setError("Erreur lors du chargement des assistances.");
-      } finally {
-        setLoading(false);
-      }
+        setLoading(true);
+        try {
+            const data = await fetchAllAssistances();
+            setAssistances(data);
+
+            // Séparer les missions en attente et acceptées
+            setAcceptedMissions(data.filter((item) => item.status === "acceptée"));
+            setPendingRequests(data.filter((item) => item.status === "en attente"));
+
+            setError(null);
+        } catch (err) {
+            setError("Erreur lors du chargement des assistances.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 🔥 Accepter une mission
+    const accepterMission = async (reservationId: number) => {
+        const result = await accepterReservation(reservationId);
+        if (result) {
+            fetchAssistances(); // 🔄 Rafraîchir la liste
+        }
+    };
+
+    // 🔥 Terminer une mission
+    const terminerMission = async (reservationId: number) => {
+        const result = await terminerReservation(reservationId);
+        if (result) {
+            fetchAssistances(); // 🔄 Rafraîchir la liste
+        }
     };
   
     useEffect(() => {
-      fetchAssistances();
-  
-      const interval = setInterval(() => {
         fetchAssistances();
-      }, 30000);
-  
-      return () => clearInterval(interval);
+        const interval = setInterval(fetchAssistances, 30000);
+        return () => clearInterval(interval);
     }, []);
-  
-    return { assistances, acceptedMissions, pendingRequests, loading, error };
-  };
+
+    return { assistances, acceptedMissions, pendingRequests, loading, error, accepterMission, terminerMission };
+};
 
   export { useAssistViewModel, useAssistanceViewModel };
 

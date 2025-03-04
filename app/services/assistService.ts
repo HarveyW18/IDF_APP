@@ -3,7 +3,7 @@ import { getFirebaseToken, db } from "./firebaseConfig";
 import { Assistance } from "../models/Assistance";
 import { doc, getDoc } from "firebase/firestore";
 
-export const BASE_API_URL = "http://192.168.1.151:7595/api";
+export const BASE_API_URL = "http://192.168.1.190:7595/api";
 
 /**
  * 🔥 Envoie une demande d'assistance PMR au backend
@@ -107,5 +107,124 @@ export const fetchAllAssistances = async (): Promise<Assistance[]> => {
     } catch (error) {
         console.error("❌ Erreur API:", error);
         return [];
+    }
+};
+
+/**
+ * 🔥 Accepter une réservation (Agent)
+ */
+export const accepterReservation = async (reservationId: number) => {
+    try {
+        const token = await getFirebaseToken();
+        if (!token) throw new Error("🔴 Impossible de récupérer le token Firebase.");
+
+        const url = `${BASE_API_URL}/Reservation/accepter-reservation/${reservationId}/${token}`;
+        console.log(`🚀 Envoi de la requête POST : ${url}`);
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const text = await response.text();  // Lire le texte brut avant de parser
+        console.log(`🔍 Réponse brute :`, text);
+
+        if (!response.ok) {
+            console.error(`❌ Erreur API : ${response.status} ${response.statusText}`);
+            throw new Error(`Erreur lors de l'acceptation : ${text}`);
+        }
+
+        const data = JSON.parse(text); // Maintenant on parse en JSON
+        console.log("✅ Réservation acceptée :", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Erreur acceptation :", error);
+        return null;
+    }
+};
+
+
+/**
+ * 🔥 Annuler une réservation en tant que PMR
+ */
+export const annulerReservationPMR = async (reservationId: number) => {
+    try {
+        const token = await getFirebaseToken();
+        if (!token) throw new Error("🔴 Impossible de récupérer le token Firebase.");
+
+        const response = await fetch(`${BASE_API_URL}/Reservation/annuler-reservation/${reservationId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Erreur lors de l'annulation de la réservation.");
+
+        console.log("🚀 Réservation annulée :", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Erreur annulation PMR :", error);
+        return null;
+    }
+};
+
+/**
+ * 🔥 Libérer une réservation acceptée par un agent
+ */
+export const libererReservation = async (reservationId: number) => {
+    try {
+        const token = await getFirebaseToken();
+        if (!token) throw new Error("🔴 Impossible de récupérer le token Firebase.");
+
+        const response = await fetch(`${BASE_API_URL}/Reservation/liberer-reservation/${reservationId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Erreur lors de la libération de la réservation.");
+
+        console.log("🔄 Réservation libérée :", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Erreur libération agent :", error);
+        return null;
+    }
+};
+
+
+/**
+ * 🔥 Terminer une réservation (Mission terminée)
+ */
+export const terminerReservation = async (reservationId: number) => {
+    try {
+        const token = await getFirebaseToken();
+        if (!token) throw new Error("🔴 Impossible de récupérer le token Firebase.");
+
+        const response = await fetch(`${BASE_API_URL}/Reservation/terminer-reservation/${reservationId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Erreur lors de la finalisation.");
+
+        console.log("✅ Réservation terminée :", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Erreur finalisation :", error);
+        return null;
     }
 };

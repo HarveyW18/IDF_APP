@@ -140,6 +140,7 @@ export const useAuthViewModel = () => {
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        console.log("🔥 Token :", token);
         console.log("🔥 Données utilisateur récupérées :", userData);
         console.log("👤 Rôle Firestore :", userData.role);
 
