@@ -1,10 +1,11 @@
 export interface Assistance {
-    id: string;
+    id: number;
     firebaseUid: string;
     pmrName: string;
     pmrAvatarUrl: string;
-    disabilityType: string;
+    handicapType: string;
     typeTransport: string;
+    price: number;
     departure: string;
     destination: string;
     time: string;

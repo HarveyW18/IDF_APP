@@ -27,9 +27,10 @@ interface AssistanceProps {
     time?: string;
     arrivalTime?: string;
     duration?: number;
-    status: string;
+    status: "acceptée" | "en attente";
   };
-  onUpdateStatus: (id: number, newStatus: string) => void;
+  onUpdateStatus: (id: number, newStatus: "acceptée" | "en attente") => void;
+  isAccepted?: boolean;
 }
 
 const truncateText = (text: string, maxLength: number) => {
@@ -56,12 +57,18 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
         setStatus("acceptée");
         onUpdateStatus(assistance.id, "acceptée");
         Alert.alert("✅ Réservation acceptée !");
+
+        // 🕒 Attendre 1 seconde avant de rafraîchir pour être sûr que l'API a bien mis à jour
+        setTimeout(() => {
+          fetchAssistances();
+        }, 1000);
       }
     } catch (error) {
       console.error("❌ Erreur acceptation :", error);
     }
     setLoading(false);
   };
+
 
   // ✅ Fonction pour libérer la réservation
   const handleRelease = async () => {
@@ -138,7 +145,7 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
           ) : (
             <>
               <FontAwesome6 name="check-circle" size={20} color="white" />
-              <Text style={styles.acceptText}>Accepter</Text>
+              <Text style={styles.acceptText}> Accepter</Text>
             </>
           )}
         </Pressable>
@@ -224,6 +231,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#4CAF50",
     justifyContent: "center",
     alignItems: "center",
+    marginBlock: 10,
+    height: 40,
     paddingHorizontal: 15,
     borderRadius: 10,
     flexDirection: "row",

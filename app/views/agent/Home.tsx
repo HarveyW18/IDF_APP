@@ -12,7 +12,7 @@ import {
 import Navbar from "../../../components/Navbar";
 import AssistanceCard from "../../../components/AssistanceCard";
 import { useAuthViewModel } from "../../viewmodels/authViewModel";
-import { fetchAllAssistances } from "../../services/assistService"; // 🔥 API pour récupérer les assistances
+import { fetchPendingAssistances, fetchAcceptedAssistances } from "../../services/assistService"; // 🔥 API pour récupérer les assistances
 import { Assistance } from "../../models/Assistance"; // 🔥 Import du type Assistance
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -35,20 +35,22 @@ const AgentHome = () => {
   const fetchAssistances = async () => {
     setLoading(true);
     try {
-      const data = await fetchAllAssistances();
-      
-      // ✅ Vérification que `status` correspond bien aux valeurs attendues
-      const formattedData = data.map((item) => ({
-        ...item,
-        status: item.status === "acceptée" || item.status === "en attente" ? item.status : "en attente",
-        handicapType: item.handicapType || "", // ✅ Valeur par défaut pour éviter les erreurs de typage
-      }));
+      console.log("🔍 fetchAssistances() - Début");
 
-      setAssistances(formattedData);
+      const firebaseUid = user?.uid; // ✅ Récupérer l'UID Firebase de l'agent connecté
+      if (!firebaseUid) throw new Error("Utilisateur non connecté.");
+      console.log(`✅ UID Firebase Agent : ${firebaseUid}`);
 
-      // ✅ Filtrage avec les valeurs correctes
-      setAcceptedMissions(formattedData.filter((item) => item.status === "acceptée"));
-      setPendingRequests(formattedData.filter((item) => item.status === "en attente"));
+      // 🔥 Récupérer les missions en attente
+      const pendingData = await fetchPendingAssistances();
+      console.log("🚀 Missions en attente reçues :", pendingData);
+
+      // 🔥 Récupérer les missions acceptées par l'agent
+      const acceptedData = await fetchAcceptedAssistances(firebaseUid);
+      console.log("✅ Missions acceptées reçues :", acceptedData);
+
+      setPendingRequests(pendingData);
+      setAcceptedMissions(acceptedData);
 
       setError(null);
     } catch (err) {
@@ -57,6 +59,7 @@ const AgentHome = () => {
       setLoading(false);
     }
   };
+
 
   // 🔄 Mise à jour automatique toutes les 30 secondes
   useEffect(() => {
@@ -70,17 +73,21 @@ const AgentHome = () => {
   // 🛠️ Fonction pour mettre à jour le statut d'une assistance
   const handleUpdateStatus = (id: number, newStatus: "acceptée" | "en attente") => {
     setAssistances((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+      prev.map((item) =>
+        item.id === id ? { ...item, status: newStatus } : item
+      )
     );
 
-    if (newStatus === "en attente") {
-      setAcceptedMissions((prev) => prev.filter((item) => item.id !== id));
-      setPendingRequests((prev) => [...prev, assistances.find((item) => item.id === id)!]);
-    } else if (newStatus === "acceptée") {
+    if (newStatus === "acceptée") {
+      setAcceptedMissions((prev) => [...prev, { ...assistances.find((item) => item.id === id)!, status: "acceptée" }]);
       setPendingRequests((prev) => prev.filter((item) => item.id !== id));
-      setAcceptedMissions((prev) => [...prev, assistances.find((item) => item.id === id)!]);
+    } else {
+      setPendingRequests((prev) => [...prev, { ...assistances.find((item) => item.id === id)!, status: "en attente" }]);
+      setAcceptedMissions((prev) => prev.filter((item) => item.id !== id));
     }
   };
+
+
 
   return (
     <View style={styles.container}>
@@ -90,13 +97,14 @@ const AgentHome = () => {
         <Text style={styles.error}>{error}</Text>
       ) : (
         <>
+          {/* 🔥 Missions acceptées en haut */}
           {acceptedMissions.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Aujourd'hui :</Text>
+              <Text style={styles.sectionTitle}>Missions acceptées :</Text>
               {acceptedMissions.map((item) => (
                 <AssistanceCard
                   key={item.id}
-                  assistance={{ ...item, typeTransport: item.typeTransport || "Inconnu" }}
+                  assistance={item}
                   isAccepted
                   onUpdateStatus={handleUpdateStatus}
                 />
@@ -104,13 +112,14 @@ const AgentHome = () => {
             </>
           )}
 
-          <Text style={styles.sectionTitle}>Vos missions à venir :</Text>
+          {/* 🔥 Missions en attente en dessous */}
+          <Text style={styles.sectionTitle}>Missions en attente :</Text>
           <FlatList
             data={pendingRequests}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => (
               <AssistanceCard
-                assistance={{ ...item, typeTransport: item.typeTransport || "Inconnu" }}
+                assistance={item}
                 onUpdateStatus={handleUpdateStatus}
               />
             )}
