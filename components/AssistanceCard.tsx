@@ -27,11 +27,13 @@ interface AssistanceProps {
     time?: string;
     arrivalTime?: string;
     duration?: number;
-    status: "acceptée" | "en attente";
+    status: "accepted" | "pending";
   };
-  onUpdateStatus: (id: number, newStatus: "acceptée" | "en attente") => void;
+  onUpdateStatus: (id: number, newStatus: "accepted" | "pending") => void;
+  fetchAssistances: () => void;
   isAccepted?: boolean;
 }
+
 
 const truncateText = (text: string, maxLength: number) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
@@ -45,7 +47,7 @@ const formatDuration = (seconds?: number) => {
   return `${hours} h ${minutes.toString().padStart(2, "0")}`;
 };
 
-const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus }) => {
+const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus, fetchAssistances }) => {
   const [status, setStatus] = useState(assistance.status);
   const [loading, setLoading] = useState(false);
 
@@ -54,14 +56,11 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
     try {
       const result = await accepterReservation(assistance.id);
       if (result) {
-        setStatus("acceptée");
-        onUpdateStatus(assistance.id, "acceptée");
+        setStatus("accepted");
+        onUpdateStatus(assistance.id, "accepted");
         Alert.alert("✅ Réservation acceptée !");
 
-        // 🕒 Attendre 1 seconde avant de rafraîchir pour être sûr que l'API a bien mis à jour
-        setTimeout(() => {
-          fetchAssistances();
-        }, 1000);
+        fetchAssistances();
       }
     } catch (error) {
       console.error("❌ Erreur acceptation :", error);
@@ -70,13 +69,14 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
   };
 
 
+
   // ✅ Fonction pour libérer la réservation
   const handleRelease = async () => {
     try {
       const result = await libererReservation(assistance.id);
       if (result) {
-        setStatus("en attente");
-        onUpdateStatus(assistance.id, "en attente");
+        setStatus("pending");
+        onUpdateStatus(assistance.id, "pending");
         Alert.alert("🔄 Réservation remise en attente.");
       }
     } catch (error) {
@@ -85,7 +85,7 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
   };
 
   {
-    status === "acceptée" && (
+    status === "accepted" && (
       <TouchableOpacity style={styles.releaseButton} onPress={handleRelease}>
         <Text style={styles.releaseText}>Libérer</Text>
       </TouchableOpacity>
@@ -100,7 +100,7 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
   );
 
   return (
-    <View style={[styles.card, status === "acceptée" ? styles.acceptedCard : styles.pendingCard]}>
+    <View style={[styles.card, status === "accepted" ? styles.acceptedCard : styles.pendingCard]}>
       <View style={styles.header}>
         <FontAwesome6 name="user" size={22} color="white" />
         <Text style={styles.name}>{assistance.pmrName}</Text>
@@ -138,7 +138,7 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
         </View>
       </View>
 
-      {status === "en attente" && (
+      {status === "pending" && (
         <Pressable onPress={handleAccept} style={styles.acceptButton}>
           {loading ? (
             <ActivityIndicator size="small" color="white" />
@@ -151,10 +151,10 @@ const AssistanceCard: React.FC<AssistanceProps> = ({ assistance, onUpdateStatus 
         </Pressable>
       )}
 
-      {status === "acceptée" && (
+      {status === "accepted" && (
         <Pressable onPress={handleRelease} style={styles.releaseButton}>
           <FontAwesome6 name="times-circle" size={20} color="white" />
-          <Text style={styles.releaseText}>Annuler</Text>
+          <Text style={styles.releaseText}> Annuler</Text>
         </Pressable>
       )}
     </View>
@@ -174,10 +174,10 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   acceptedCard: {
-    backgroundColor: "#1B5E20",
+    backgroundColor: "#2E7D32",
   },
   pendingCard: {
-    backgroundColor: "#79c595",
+    backgroundColor: "#A5D6A7",
   },
   header: {
     flexDirection: "row",
@@ -238,7 +238,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   acceptText: { color: "white", fontWeight: "bold", marginRight: 10 },
-  releaseButton: { marginTop: 10, alignSelf: "center", padding: 10, backgroundColor: "orange", borderRadius: 10 },
+
+  releaseButton: {
+    backgroundColor: "#388E3C",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBlock: 10,
+    height: 40,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    flexDirection: "row",
+  },
+
   releaseText: { color: "white", fontWeight: "bold" },
 });
 

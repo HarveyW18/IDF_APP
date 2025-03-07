@@ -18,8 +18,8 @@ const Navbar = () => {
             ? [
                 { route: "/views/agent/Home", icon: "home", lib: Ionicons },
                 { route: "/views/agent/Assistances", icon: "clipboard-list", lib: MaterialCommunityIcons },
-                { route: "/messages", icon: "comments", lib: FontAwesome },
-                { route: "/profile", icon: "person-outline", lib: Ionicons },
+                { route: "/views/agent/messages", icon: "comments", lib: FontAwesome },
+                { route: "/views/agent/profile", icon: "person-outline", lib: Ionicons },
             ]
             : [
                 { route: "/views/client/Home", icon: "home", lib: Ionicons },
@@ -30,7 +30,7 @@ const Navbar = () => {
     }, [isAgent]);
 
     return (
-        <View style={[styles.container, { backgroundColor: isAgent ? "#79c595" : "#3C85FF" }]}>
+        <View style={[styles.container, { backgroundColor: isAgent ? "#424242" : "#3C85FF" }]}>
             {pages.map((page) => {
                 const isActive = page.route === pathname;
                 const scaleValue = useRef(new Animated.Value(isActive ? 1.2 : 1)).current;

@@ -9,6 +9,6 @@ export interface Assistance {
     departure: string;
     destination: string;
     time: string;
-    status : "acceptée" | "en attente";
+    status : "accepted" | "pending";
   }
   

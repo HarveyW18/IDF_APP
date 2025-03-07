@@ -70,57 +70,32 @@ export const fetchAllAssistances = async (): Promise<Assistance[]> => {
             headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log(`
-            curl --location '${BASE_API_URL}/Reservation/all-reservations' \\
-            --header 'Content-Type: application/json' \\
-            --header 'Authorization: Bearer ${token}' \\
-        `);
-
-        console.log("🔍 Réponse brute API :", response);
-
         if (!response.ok) throw new Error("Erreur de récupération des réservations.");
         const reservations = await response.json();
-        console.log("🚀 Réservations reçues :", reservations);
 
-        // ✅ Fonction pour éviter les erreurs d'accès aux clés undefined
-        const safeGet = (obj: any, key: string, defaultValue: string = "Inconnu") => {
-            return obj && obj[key] !== undefined ? obj[key] : defaultValue;
-        };
-
-        // 🛠️ Traitement des données de l'API
-        let assistanceData = reservations.map((item: any) => ({
-            id: Number(safeGet(item, "id")),
-            pmrName: `${safeGet(item, "nom")} ${safeGet(item, "prenom")}`.trim(),
-            status: safeGet(item, "status", "en attente") === "accepted" ? "acceptée" : "en attente",
-            departure: safeGet(item, "lieuDepart"),
-            destination: safeGet(item, "lieuArrivee"),
-            typeTransport: safeGet(item, "typeTransport"),
-            time: safeGet(item, "dateHeureDepart"),
-            arrivalTime: safeGet(item, "dateHeureArrivee"),
-            duration: Number(safeGet(item, "dureeTotaleEnSecondes", "0")),
-            price: Number(safeGet(item, "prix", "0")),
+        return reservations.map((item: any) => ({
+            id: Number(item.id || 0), // ✅ Sécurisation
+            pmrName: `${item.nom ?? "Inconnu"} ${item.prenom ?? "Inconnu"}`.trim(),
+            status: item.status === "accepted" ? "accepted" : "pending",
+            departure: item.lieuDepart ?? "Lieu inconnu",
+            destination: item.lieuArrivee ?? "Lieu inconnu",
+            typeTransport: item.typeTransport ?? "Non spécifié",
+            time: item.dateHeureDepart ?? "",
+            arrivalTime: item.dateHeureArrivee ?? "",
+            duration: Number(item.dureeTotaleEnSecondes || 0),
+            price: Number(item.prix || 0),
             sections: item.sections?.map((section: any) => ({
-                modeTransport: safeGet(section, "modeTransport"),
-                depart: safeGet(section, "depart"),
-                arrivee: safeGet(section, "arrivee"),
-                price: Number(safeGet(section, "prix")),
-                departureTime: safeGet(section, "dateHeureDepart"),
-                arrivalTime: safeGet(section, "dateHeureArrivee"),
+                modeTransport: section.ModeTransport ?? "Non spécifié",
+                depart: section.Depart ?? "Non spécifié",
+                arrivee: section.Arrivee ?? "Non spécifié",
+                price: Number(section.Prix ?? 0),
+                departureTime: section.DateHeureDepart ?? "",
+                arrivalTime: section.DateHeureArrivee ?? "",
             })) || [],
         }));
-
-        // 🔥 Correction de `status`
-        assistanceData = assistanceData.map((item) => ({
-            ...item,
-            status: ["acceptée", "en attente"].includes(item.status) ? item.status : "en attente",
-            handicapType: item.handicapType || "",
-        }));
-
-        return assistanceData;
-
     } catch (error) {
         console.error("❌ Erreur API:", error);
-        return [];
+        return []; // ✅ Retourne un tableau vide au lieu d'undefined
     }
 };
 
@@ -136,35 +111,40 @@ export const fetchPendingAssistances = async (): Promise<Assistance[]> => {
         });
         console.log(`📩 Réponse API (Status: ${response.status})`);
 
-        const responseData = await response.text();
-        console.log("📜 Réponse brute reçue :", responseData);
-
-
         if (!response.ok) throw new Error("Erreur de récupération des réservations en attente.");
         const reservations = await response.json();
+        console.log("📜 Réponse brute reçue :", reservations);
         console.log("🚀 Réservations en attente traitées :", reservations);
-        
 
-        return reservations.map((item: any) => ({
-            id: Number(item.Id),
-            pmrName: `${item.Nom} ${item.Prenom}`.trim(),
-            status: "en attente",
-            departure: item.LieuDepart,
-            destination: item.LieuArrivee,
-            typeTransport: item.TypeTransport,
-            time: item.DateHeureDepart,
-            arrivalTime: item.DateHeureArrivee,
-            duration: Number(item.DureeTotaleEnSecondes || "0"),
-            price: Number(item.Prix || "0"),
-            sections: item.Sections.map((section: any) => ({
-                modeTransport: section.ModeTransport,
-                depart: section.Depart,
-                arrivee: section.Arrivee,
-                price: Number(section.Prix),
-                departureTime: section.DateHeureDepart,
-                arrivalTime: section.DateHeureArrivee,
-            })),
-        }));
+
+        return reservations.map((item: any) => {
+            const convertedStatus = item.status === "pending" ? "pending" : "accepted"; // ✅ Assurer cohérence avec le modèle
+        
+            console.log(`✅ ID ${item.id} - Status avant: ${item.status}, après conversion: ${convertedStatus}`);
+        
+            return {
+                id: Number(item.id),
+                pmrName: `${item.nom} ${item.prenom}`.trim(),
+                status: convertedStatus,  
+                departure: item.lieuDepart,
+                destination: item.lieuArrivee,
+                typeTransport: item.typeTransport,
+                time: item.dateHeureDepart,
+                arrivalTime: item.dateHeureArrivee,
+                duration: Number(item.dureeTotaleEnSecondes || "0"),
+                price: Number(item.prix || "0"),
+                sections: item.sections.map((section: any) => ({
+                    modeTransport: section.modeTransport,
+                    depart: section.depart,
+                    arrivee: section.arrivee,
+                    price: Number(section.prix),
+                    departureTime: section.dateHeureDepart,
+                    arrivalTime: section.dateHeureArrivee,
+                })),
+            };
+        });
+        
+        
     } catch (error) {
         console.error("❌ Erreur API:", error);
         return [];
@@ -181,7 +161,7 @@ export const accepterReservation = async (reservationId: number) => {
         const token = await getFirebaseToken();
         if (!token) throw new Error("Impossible de récupérer le token Firebase.");
 
-        const response = await fetch(`${BASE_API_URL}/Reservation/accepter-reservation/${reservationId.toString()}/${token}`, {
+        const response = await fetch(`${BASE_API_URL}/Reservation/accepter-reservation/${reservationId}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -195,7 +175,7 @@ export const accepterReservation = async (reservationId: number) => {
         const data = JSON.parse(text);
         console.log("✅ Réservation acceptée :", data);
 
-        return { ...data, status: data.status === "accepted" ? "acceptée" : data.status };
+        return { ...data, status: data.status === "accepted" ? "accepted" : data.status };
     } catch (error) {
         console.error("❌ Erreur acceptation :", error);
         return null;
@@ -216,39 +196,44 @@ export const fetchAcceptedAssistances = async (firebaseUid: string): Promise<Ass
             headers: { Authorization: `Bearer ${token}` },
         });
         console.log(`📩 Réponse API (Status: ${response.status})`);
-        
-        const responseData = await response.text(); // Lire la réponse brute
-        console.log("📜 Réponse brute reçue :", responseData);
 
         if (!response.ok) throw new Error("Erreur de récupération des réservations acceptées.");
+        
         const reservations = await response.json();
         console.log("🚀 Réservations acceptées traitées :", reservations);
 
-        return reservations.map((item: any) => ({
-            id: Number(item.Id),
-            pmrName: `${item.Nom} ${item.Prenom}`.trim(),
-            status: "acceptée",
-            departure: item.LieuDepart,
-            destination: item.LieuArrivee,
-            typeTransport: item.TypeTransport,
-            time: item.DateHeureDepart,
-            arrivalTime: item.DateHeureArrivee,
-            duration: Number(item.DureeTotaleEnSecondes || "0"),
-            price: Number(item.Prix || "0"),
-            sections: item.Sections.map((section: any) => ({
-                modeTransport: section.ModeTransport,
-                depart: section.Depart,
-                arrivee: section.Arrivee,
-                price: Number(section.Prix),
-                departureTime: section.DateHeureDepart,
-                arrivalTime: section.DateHeureArrivee,
-            })),
-        }));
+        return reservations.map((item: any) => {
+            const convertedStatus = item.status === "pending" ? "pending" : "accepted"; 
+            console.log(`✅ ID ${item.id} - Status avant: ${item.status}, après conversion: ${convertedStatus}`);
+
+            return {
+                id: Number(item.id),
+                pmrName: `${item.nom} ${item.prenom}`.trim(),
+                status: convertedStatus,  // ✅ Assurer la cohérence avec le modèle
+                departure: item.lieuDepart,
+                destination: item.lieuArrivee,
+                typeTransport: item.typeTransport,
+                time: item.dateHeureDepart,
+                arrivalTime: item.dateHeureArrivee,
+                duration: Number(item.dureeTotaleEnSecondes || "0"),
+                price: Number(item.prix || "0"),
+                sections: (item.sections ?? []).map((section: any) => ({
+                    modeTransport: section.modeTransport,
+                    depart: section.depart,
+                    arrivee: section.arrivee,
+                    price: Number(section.prix),
+                    departureTime: section.dateHeureDepart,
+                    arrivalTime: section.dateHeureArrivee,
+                })),
+            };
+        });
+
     } catch (error) {
         console.error("❌ Erreur API:", error);
         return [];
     }
 };
+
 
 /**
  * 🔥 Annuler une réservation en tant que PMR
@@ -298,7 +283,7 @@ export const libererReservation = async (reservationId: number) => {
 
         const data = JSON.parse(text);
         console.log("🔄 Réservation libérée :", data);
-        return { ...data, status: "en attente" }; // ✅ Mise à jour immédiate
+        return { ...data, status: "pending" }; // ✅ Mise à jour immédiate
     } catch (error) {
         console.error("❌ Erreur libération agent :", error);
         return null;

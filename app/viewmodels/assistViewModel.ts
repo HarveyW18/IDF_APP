@@ -165,8 +165,8 @@ const useAssistanceViewModel = () => {
             setAssistances(data);
 
             // Séparer les missions en attente et acceptées
-            setAcceptedMissions(data.filter((item) => item.status === "acceptée"));
-            setPendingRequests(data.filter((item) => item.status === "en attente"));
+            setAcceptedMissions(data.filter((item) => item.status === "accepted"));
+            setPendingRequests(data.filter((item) => item.status === "pending"));
 
             setError(null);
         } catch (err) {
